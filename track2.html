@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Track 2 — Silverstone Overview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+:root {
+  --bg: #faf0e8;
+  --blue: #224baf;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--blue);
+  font-family: "Barlow", sans-serif;
+}
+
+.stage {
+  width: 1920px;
+  height: 1080px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+}
+
+.hud {
+  width: 1840px;
+  height: 1000px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+  border: 1px solid rgba(34, 75, 175, 0.22);
+  border-radius: 18px;
+}
+
+.hud-bar {
+  flex: 0 0 42px;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  border-bottom: 1px solid rgba(34, 75, 175, 0.16);
+}
+
+.hud-close {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #8a7464;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+}
+
+.hud-close span {
+  font-size: 22px;
+  line-height: 1;
+  color: #2b2018;
+}
+
+.t2 {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 320px 1fr 430px;
+}
+
+.standings {
+  padding: 16px 12px 12px 18px;
+  border-right: 1px solid rgba(34, 75, 175, 0.16);
+  overflow: hidden;
+}
+
+.standings h2,
+.map h1,
+.tel-sec h3 {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+
+.standings ol {
+  list-style: none;
+  margin-top: 10px;
+}
+
+.stand-row {
+  display: grid;
+  grid-template-columns: 36px 78px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 8px 0 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.stand-row.is-on {
+  background: rgba(34, 75, 175, 0.12);
+}
+
+.stand-row b,
+.stand-row em,
+.stand-row span {
+  font-style: normal;
+  font-weight: 600;
+}
+
+.stand-row b {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 14px;
+}
+
+.stand-row em {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+}
+
+.stand-row .gap {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: right;
+}
+
+.tyre-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 3px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #faf0e8;
+}
+
+.tyre-pill.c1 {
+  background: #d8dce6;
+  color: var(--blue);
+}
+.tyre-pill.c2 {
+  background: #3d7dff;
+}
+.tyre-pill.c3 {
+  background: #2f9e5a;
+}
+.tyre-pill.c4 {
+  background: #e8a317;
+  color: #2b2018;
+}
+.tyre-pill.c5 {
+  background: #d44848;
+}
+
+.map {
+  position: relative;
+  min-width: 0;
+}
+
+.map-tools {
+  position: absolute;
+  z-index: 2;
+  top: 18px;
+  left: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.map h1 {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.mode-switch {
+  display: flex;
+  flex-direction: column;
+  width: 148px;
+  overflow: hidden;
+  background: var(--bg);
+  border: 1px solid var(--blue);
+  border-radius: 8px;
+}
+
+.mode-switch__label {
+  padding: 8px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.mode-btn {
+  height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-top: 1px solid rgba(34, 75, 175, 0.28);
+  background: transparent;
+  color: var(--blue);
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-decoration: none;
+  line-height: 36px;
+  white-space: nowrap;
+}
+
+.mode-btn.is-on {
+  background: rgba(34, 75, 175, 0.1);
+}
+
+.ring {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.car-dot {
+  cursor: pointer;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px 10px;
+  overflow: auto;
+  border-left: 1px solid rgba(34, 75, 175, 0.16);
+  scrollbar-width: thin;
+  scrollbar-color: var(--blue) rgba(34, 75, 175, 0.12);
+}
+
+.tel-top {
+  display: grid;
+  gap: 8px;
+}
+
+.tel-top h2 {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tel-arrow {
+  margin-left: 4px;
+  font-size: 0.72em;
+}
+
+.tel-select {
+  justify-self: start;
+  min-width: 132px;
+  padding: 6px 28px 6px 10px;
+  border: 1px solid var(--blue);
+  border-radius: 4px;
+  background: transparent url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%23224BAF'/></svg>") no-repeat right 10px center;
+  color: var(--blue);
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.tel-list {
+  display: grid;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.tel-list > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.tel-list dt {
+  font-size: 13px;
+}
+
+.tel-list dd {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.bar {
+  display: inline-block;
+  width: 88px;
+  height: 8px;
+  overflow: hidden;
+  border: 1px solid var(--blue);
+  border-radius: 2px;
+  background: transparent;
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+  background: var(--blue);
+}
+
+.chip {
+  display: inline-block;
+  min-width: 42px;
+  padding: 1px 8px;
+  border: 1px solid var(--blue);
+  border-radius: 3px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+.grids {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.tyre-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.tyre-grid div {
+  display: grid;
+  gap: 4px;
+  padding: 7px 8px 8px;
+  border: 1px solid var(--blue);
+  border-radius: 4px;
+}
+
+.tyre-grid span {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.tyre-grid strong {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.radio {
+  flex: 0 0 52px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+  padding: 0 18px;
+  border-top: 1px solid rgba(34, 75, 175, 0.16);
+}
+
+.mic {
+  min-width: 92px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--blue);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--blue);
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.mic.is-on {
+  background: var(--blue);
+  color: var(--bg);
+}
+
+.radio p {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 13px;
+}
+
+.radio span {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <section class="hud">
+        <header class="hud-bar">
+          <a class="hud-close" href="dashboard.html">
+            <span aria-hidden="true">×</span>
+            back
+          </a>
+        </header>
+
+        <div class="t2">
+          <aside class="standings">
+            <h2>Standings</h2>
+            <ol id="standings"></ol>
+          </aside>
+
+          <section class="map">
+            <div class="map-tools">
+              <h1>Silverstone</h1>
+              <div class="mode-switch" role="group" aria-label="Camera views">
+                <span class="mode-switch__label">View</span>
+                <a class="mode-btn" href="dashboard.html">Cockpit View</a>
+                <a class="mode-btn" href="dashboard.html?cam=overview">Circuit1</a>
+                <span class="mode-btn is-on">Circuit2</span>
+              </div>
+            </div>
+            <svg class="ring" viewBox="0 0 800 800" aria-hidden="true">
+              <defs>
+                <pattern id="t2-grid" width="28" height="28" patternUnits="userSpaceOnUse">
+                  <path d="M 28 0 L 0 0 0 28" fill="none" stroke="rgba(34,75,175,0.12)" stroke-width="1" />
+                </pattern>
+                <filter id="t2-glow" x="-80%" y="-80%" width="260%" height="260%">
+                  <feGaussianBlur stdDeviation="3.2" result="b" />
+                  <feMerge>
+                    <feMergeNode in="b" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <rect x="0" y="0" width="800" height="800" fill="url(#t2-grid)" />
+              <circle cx="400" cy="400" r="268" fill="none" stroke="#224baf" stroke-opacity="0.22" stroke-width="18" />
+              <circle cx="400" cy="400" r="268" fill="none" stroke="#224baf" stroke-width="1.35" />
+              <g id="cars"></g>
+            </svg>
+          </section>
+
+          <aside class="panel">
+            <header class="tel-top">
+              <h2 id="head-line">
+                <span id="head-pos">P13</span>
+                <span id="head-num">23</span>
+                <span id="head-code">ALB</span>
+                <span class="tel-arrow" id="head-arrow">↑</span>
+              </h2>
+              <button class="tel-select" type="button" id="tel-select">#23 ALB</button>
+            </header>
+
+            <section class="tel-sec">
+              <h3>Race</h3>
+              <dl class="tel-list">
+                <div><dt>Position</dt><dd id="tel-position">P13</dd></div>
+                <div><dt>Lap</dt><dd id="tel-lap">49</dd></div>
+                <div><dt>Track</dt><dd>Silverstone</dd></div>
+                <div><dt>Gap Ahead</dt><dd id="tel-gap-ahead">+0.1s</dd></div>
+                <div><dt>Gap Behind</dt><dd id="tel-gap-behind">+0.4s</dd></div>
+                <div><dt>To Leader</dt><dd id="tel-leader">+8.6s</dd></div>
+              </dl>
+            </section>
+
+            <section class="tel-sec">
+              <h3>Performance</h3>
+              <dl class="tel-list">
+                <div><dt>Speed</dt><dd id="tel-speed">153 km/h</dd></div>
+                <div><dt>RPM</dt><dd id="tel-rpm">10859</dd></div>
+                <div><dt>Gear</dt><dd id="tel-gear">3</dd></div>
+                <div><dt>Current Lap</dt><dd id="tel-cur-lap">39.9s</dd></div>
+                <div><dt>Best Lap</dt><dd id="tel-best-lap">32.5s</dd></div>
+                <div><dt>Lap Distance</dt><dd id="tel-dist">1571 m</dd></div>
+              </dl>
+            </section>
+
+            <section class="tel-sec">
+              <h3>Controls</h3>
+              <dl class="tel-list">
+                <div>
+                  <dt>Throttle</dt>
+                  <dd>
+                    <span class="bar"><i id="bar-thr"></i></span>
+                    <span id="tel-thr">100%</span>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Brake</dt>
+                  <dd>
+                    <span class="bar"><i id="bar-brk"></i></span>
+                    <span id="tel-brk">0%</span>
+                  </dd>
+                </div>
+                <div>
+                  <dt>DRS</dt>
+                  <dd><span class="chip" id="tel-drs">OFF</span></dd>
+                </div>
+                <div><dt>ERS Battery</dt><dd id="tel-ers">98.9%</dd></div>
+              </dl>
+            </section>
+
+            <section class="tel-sec">
+              <h3>Tyres</h3>
+              <dl class="tel-list">
+                <div>
+                  <dt>Compound</dt>
+                  <dd><span class="tyre-pill" id="tel-compound">C5</span></dd>
+                </div>
+                <div><dt>Tyre Age</dt><dd id="tel-age">18 laps</dd></div>
+                <div><dt>Avg Wear</dt><dd id="tel-wear">6.8%</dd></div>
+                <div><dt>Fuel</dt><dd id="tel-fuel">15.2 L</dd></div>
+                <div><dt>Engine Temp</dt><dd id="tel-eng">115.6°C</dd></div>
+                <div><dt>Damage</dt><dd id="tel-dmg">0%</dd></div>
+              </dl>
+            </section>
+
+            <div class="grids">
+              <section class="tel-sec">
+                <h3>Tyre Temps</h3>
+                <div class="tyre-grid">
+                  <div><span>FL</span><strong id="tel-fl">105.7°C</strong></div>
+                  <div><span>FR</span><strong id="tel-fr">106.1°C</strong></div>
+                  <div><span>RL</span><strong id="tel-rl">104.8°C</strong></div>
+                  <div><span>RR</span><strong id="tel-rr">105.2°C</strong></div>
+                </div>
+              </section>
+              <section class="tel-sec">
+                <h3>Tyre Wear</h3>
+                <div class="tyre-grid">
+                  <div><span>FL</span><strong id="wear-fl">3.3%</strong></div>
+                  <div><span>FR</span><strong id="wear-fr">3.1%</strong></div>
+                  <div><span>RL</span><strong id="wear-rl">4.0%</strong></div>
+                  <div><span>RR</span><strong id="wear-rr">3.8%</strong></div>
+                </div>
+              </section>
+            </div>
+          </aside>
+        </div>
+
+        <footer class="radio">
+          <button class="mic" type="button" id="mic-btn" aria-pressed="false">Mic Off</button>
+          <p id="radio-msg">pit radio ready — ask about tyres, box, gaps, fuel...</p>
+          <span>Space — toggle mic</span>
+        </footer>
+      </section>
+    </div>
+    <script>
+      function fitStage() {
+        const stage = document.querySelector(".stage");
+        const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+        stage.style.transform = "scale(" + scale + ")";
+      }
+      fitStage();
+      window.addEventListener("resize", fitStage);
+    </script>
+    <script>
+(function () {
+  const DRIVERS = [
+    { num: 77, code: "BOT", tyre: "C4", gap: 0 },
+    { num: 81, code: "PIA", tyre: "C3", gap: 0.3 },
+    { num: 4, code: "NOR", tyre: "C3", gap: 0.7 },
+    { num: 1, code: "VER", tyre: "C4", gap: 1.2 },
+    { num: 16, code: "LEC", tyre: "C3", gap: 1.8 },
+    { num: 55, code: "SAI", tyre: "C4", gap: 2.4 },
+    { num: 63, code: "RUS", tyre: "C2", gap: 3.1 },
+    { num: 44, code: "HAM", tyre: "C3", gap: 3.6 },
+    { num: 14, code: "ALO", tyre: "C4", gap: 4.4 },
+    { num: 18, code: "STR", tyre: "C5", gap: 5.2 },
+    { num: 10, code: "GAS", tyre: "C3", gap: 6.0 },
+    { num: 31, code: "OCO", tyre: "C4", gap: 6.9 },
+    { num: 23, code: "ALB", tyre: "C5", gap: 8.6 },
+    { num: 22, code: "TSU", tyre: "C3", gap: 9.0 },
+    { num: 3, code: "RIC", tyre: "C4", gap: 10.1 },
+    { num: 27, code: "HUL", tyre: "C2", gap: 11.4 },
+    { num: 20, code: "MAG", tyre: "C3", gap: 12.2 },
+    { num: 24, code: "ZHO", tyre: "C4", gap: 13.5 },
+    { num: 2, code: "SAR", tyre: "C5", gap: 14.8 },
+    { num: 11, code: "PER", tyre: "C3", gap: 16.2 },
+    { num: 43, code: "COL", tyre: "C4", gap: 17.6 },
+    { num: 50, code: "BEA", tyre: "C3", gap: 19.4 },
+  ];
+
+  const NS = "http://www.w3.org/2000/svg";
+  const listEl = document.getElementById("standings");
+  const carsEl = document.getElementById("cars");
+  const micBtn = document.getElementById("mic-btn");
+  const radioMsg = document.getElementById("radio-msg");
+  if (!listEl || !carsEl) return;
+
+  const CX = 400;
+  const CY = 400;
+  const R = 268;
+  let selected = 23;
+  let raceT = 0.18;
+  let micOn = false;
+  const dots = [];
+
+  DRIVERS.forEach((d, i) => {
+    d.pos = i + 1;
+    d.baseGap = d.gap;
+  });
+
+  function fmtGap(sec) {
+    if (sec <= 0.001) return "LEADER";
+    return "+" + sec.toFixed(1) + "s";
+  }
+
+  function intervalGap(i) {
+    if (i === 0) return "LEADER";
+    return fmtGap(Math.max(0.1, DRIVERS[i].gap - DRIVERS[i - 1].gap));
+  }
+
+  function carAngle(driver) {
+    const pack = DRIVERS[DRIVERS.length - 1].gap || 1;
+    return -Math.PI / 2 - raceT * Math.PI * 2 - (driver.gap / pack) * Math.PI * 1.55;
+  }
+
+  DRIVERS.forEach((d) => {
+    const row = document.createElement("li");
+    row.className = "stand-row";
+    row.dataset.num = String(d.num);
+    row.innerHTML =
+      "<b>P" +
+      d.pos +
+      "</b><em>#" +
+      d.num +
+      " " +
+      d.code +
+      '</em><span class="gap">' +
+      intervalGap(d.pos - 1) +
+      '</span><span class="tyre-pill ' +
+      d.tyre.toLowerCase() +
+      '">' +
+      d.tyre +
+      "</span>";
+    row.addEventListener("click", () => select(d.num));
+    listEl.appendChild(row);
+
+    const g = document.createElementNS(NS, "g");
+    g.setAttribute("class", "car-dot");
+    g.dataset.num = String(d.num);
+    const halo = document.createElementNS(NS, "circle");
+    halo.setAttribute("r", "16");
+    halo.setAttribute("fill", "#224baf");
+    halo.setAttribute("opacity", "0.18");
+    halo.setAttribute("filter", "url(#t2-glow)");
+    const node = document.createElementNS(NS, "circle");
+    node.setAttribute("r", "11");
+    node.setAttribute("stroke", "#224baf");
+    node.setAttribute("stroke-width", "1.4");
+    const label = document.createElementNS(NS, "text");
+    label.setAttribute("text-anchor", "middle");
+    label.setAttribute("dominant-baseline", "central");
+    label.setAttribute("font-family", "Barlow Condensed, Barlow, sans-serif");
+    label.setAttribute("font-size", "10");
+    label.setAttribute("font-weight", "700");
+    label.textContent = String(d.num);
+    g.appendChild(halo);
+    g.appendChild(node);
+    g.appendChild(label);
+    g.addEventListener("click", () => select(d.num));
+    carsEl.appendChild(g);
+    dots.push({ d, g, halo, node, label, row });
+  });
+
+  function select(num) {
+    selected = num;
+    paint();
+    fillPanel();
+  }
+
+  function paint() {
+    dots.forEach((item) => {
+      const on = item.d.num === selected;
+      const ang = carAngle(item.d);
+      const x = CX + Math.cos(ang) * R;
+      const y = CY + Math.sin(ang) * R;
+      item.g.setAttribute("transform", "translate(" + x.toFixed(1) + " " + y.toFixed(1) + ")");
+      item.halo.setAttribute("opacity", on ? "0.28" : "0");
+      item.node.setAttribute("r", on ? "13.5" : "10.5");
+      item.node.setAttribute("fill", on ? "#224baf" : "#faf0e8");
+      item.label.setAttribute("fill", on ? "#faf0e8" : "#224baf");
+      item.label.setAttribute("font-size", on ? "12" : "10");
+      item.row.classList.toggle("is-on", on);
+      item.row.querySelector("b").textContent = "P" + item.d.pos;
+      item.row.querySelector(".gap").textContent = intervalGap(item.d.pos - 1);
+    });
+  }
+
+  function driverByNum(num) {
+    return DRIVERS.find((d) => d.num === num) || DRIVERS[12];
+  }
+
+  function fillPanel() {
+    const d = driverByNum(selected);
+    const i = DRIVERS.indexOf(d);
+    const behind = DRIVERS[i + 1];
+    const ahead = i === 0 ? 0 : d.gap - DRIVERS[i - 1].gap;
+    const el = (id) => document.getElementById(id);
+    el("head-pos").textContent = "P" + d.pos;
+    el("head-num").textContent = String(d.num);
+    el("head-code").textContent = d.code;
+    el("head-arrow").textContent = i < 12 ? "↑" : "↓";
+    el("tel-select").textContent = "#" + d.num + " " + d.code;
+    el("tel-position").textContent = "P" + d.pos;
+    el("tel-gap-ahead").textContent = i === 0 ? "—" : "+" + ahead.toFixed(1) + "s";
+    el("tel-gap-behind").textContent = behind ? "+" + (behind.gap - d.gap).toFixed(1) + "s" : "—";
+    el("tel-leader").textContent = fmtGap(d.gap);
+    el("tel-compound").textContent = d.tyre;
+    el("tel-compound").className = "tyre-pill " + d.tyre.toLowerCase();
+  }
+
+  function setMic(on) {
+    micOn = on;
+    micBtn.classList.toggle("is-on", on);
+    micBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    micBtn.textContent = on ? "Mic On" : "Mic Off";
+    radioMsg.textContent = on
+      ? "listening — box this lap, tyre delta C5 vs C3..."
+      : "pit radio ready — ask about tyres, box, gaps, fuel...";
+  }
+
+  micBtn.addEventListener("click", () => setMic(!micOn));
+  window.addEventListener("keydown", (ev) => {
+    if (ev.code !== "Space") return;
+    if (/^(INPUT|TEXTAREA|BUTTON)$/.test(ev.target.tagName)) return;
+    ev.preventDefault();
+    setMic(!micOn);
+  });
+
+  const tel = {
+    lap: 49,
+    speed: 153,
+    rpm: 10859,
+    gear: 3,
+    cur: 39.9,
+    dist: 1571,
+    thr: 100,
+    brk: 0,
+    ers: 98.9,
+    fuel: 15.2,
+    eng: 115.6,
+    fl: 105.7,
+    fr: 106.1,
+    rl: 104.8,
+    rr: 105.2,
+  };
+
+  function tick(now) {
+    raceT = (now * 0.000012) % 1;
+    DRIVERS.forEach((d, i) => {
+      d.gap = Math.max(0, d.baseGap + Math.sin(now * 0.0004 + i) * 0.08);
+      d.pos = i + 1;
+    });
+    const d = driverByNum(selected);
+    const corner = 0.5 + 0.5 * Math.sin(now * 0.0011 + d.pos);
+    tel.speed = 118 + (1 - corner) * 168 + Math.sin(now * 0.002) * 6;
+    tel.gear = tel.speed < 130 ? 3 : tel.speed < 180 ? 4 : tel.speed < 230 ? 5 : tel.speed < 270 ? 6 : 7;
+    tel.rpm = 7800 + tel.gear * 380 + tel.speed * 8;
+    tel.thr = Math.max(8, Math.min(100, (1 - corner) * 100));
+    tel.brk = corner > 0.72 ? Math.min(100, (corner - 0.72) * 280) : 0;
+    tel.cur += 0.016;
+    tel.dist = 400 + ((now * 0.04) % 5200);
+    tel.ers = 92 + Math.sin(now * 0.0003) * 6;
+    tel.fuel = Math.max(4.2, 15.2 - now * 0.0000004);
+    tel.eng = 114.2 + Math.sin(now * 0.0008) * 2.1;
+    tel.fl = 104.8 + Math.sin(now * 0.001) * 1.4;
+    tel.fr = 105.2 + Math.cos(now * 0.0011) * 1.5;
+    tel.rl = 104.1 + Math.sin(now * 0.0009) * 1.2;
+    tel.rr = 104.6 + Math.cos(now * 0.0007) * 1.1;
+
+    const el = (id) => document.getElementById(id);
+    el("tel-lap").textContent = String(tel.lap);
+    el("tel-speed").textContent = tel.speed.toFixed(1) + " km/h";
+    el("tel-rpm").textContent = String(Math.round(tel.rpm));
+    el("tel-gear").textContent = String(tel.gear);
+    el("tel-cur-lap").textContent = tel.cur.toFixed(1) + "s";
+    el("tel-dist").textContent = Math.round(tel.dist) + " m";
+    el("tel-thr").textContent = Math.round(tel.thr) + "%";
+    el("tel-brk").textContent = Math.round(tel.brk) + "%";
+    el("bar-thr").style.width = tel.thr.toFixed(0) + "%";
+    el("bar-brk").style.width = tel.brk.toFixed(0) + "%";
+    el("tel-drs").textContent = tel.speed > 240 && tel.thr > 90 ? "ON" : "OFF";
+    el("tel-ers").textContent = tel.ers.toFixed(1) + "%";
+    el("tel-fuel").textContent = tel.fuel.toFixed(1) + " L";
+    el("tel-eng").textContent = tel.eng.toFixed(1) + "°C";
+    el("tel-fl").textContent = tel.fl.toFixed(1) + "°C";
+    el("tel-fr").textContent = tel.fr.toFixed(1) + "°C";
+    el("tel-rl").textContent = tel.rl.toFixed(1) + "°C";
+    el("tel-rr").textContent = tel.rr.toFixed(1) + "°C";
+    paint();
+    fillPanel();
+    requestAnimationFrame(tick);
+  }
+
+  select(23);
+  requestAnimationFrame(tick);
+})();
+    </script>
+  </body>
+</html>
