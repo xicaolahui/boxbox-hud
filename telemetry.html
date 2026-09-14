@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Telemetry HUD — Daily Race</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+:root {
+  --stage: #faf0e8;
+  --cyan: #7df9ff;
+  --ink: #224baf;
+  --muted: #224baf;
+  --blue: #224baf;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #faf0e8;
+  color: var(--ink);
+  font-family: "Barlow", sans-serif;
+}
+
+.stage {
+  width: 1920px;
+  height: 1080px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+  display: grid;
+  place-items: center;
+  background: #faf0e8;
+}
+
+.hud {
+  width: 1840px;
+  height: 1000px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.hud-bar {
+  flex: 0 0 42px;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  background: transparent;
+  border-bottom: 0;
+}
+
+.hud-close {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #8a7464;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+}
+
+.hud-close span {
+  font-size: 22px;
+  line-height: 1;
+  color: #2b2018;
+}
+
+.gt {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 250px 1fr 430px;
+  grid-template-rows: 228px 1fr 168px;
+  grid-template-areas:
+    "speed chart race"
+    "mesh mesh drift"
+    "quali quali drift";
+  gap: 14px;
+  padding: 8px 16px 16px;
+}
+
+.card {
+  position: relative;
+  overflow: hidden;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #faf0e8;
+  border: 1px solid var(--blue);
+  box-shadow: none;
+}
+
+.card--speed {
+  grid-area: speed;
+}
+
+.card--chart {
+  grid-area: chart;
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  grid-template-rows: auto 1fr 22px;
+  gap: 4px 8px;
+  background-image:
+    linear-gradient(rgba(34, 75, 175, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 75, 175, 0.12) 1px, transparent 1px);
+  background-size: 24px 24px, 24px 24px;
+}
+
+.card--race {
+  grid-area: race;
+}
+
+.card--mesh {
+  grid-area: mesh;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+}
+
+.mesh-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+}
+
+.mesh-left,
+.mesh-right {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 10px 12px 8px;
+}
+
+.mesh-title-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  margin: 0 0 6px;
+  background: #faf0e8;
+  border: 1px solid var(--blue);
+  border-radius: 6px;
+}
+
+.mesh-title-bar h2 {
+  color: var(--blue);
+  letter-spacing: 0.08em;
+}
+
+.mesh-sub {
+  margin: 0 2px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+
+.mesh-right h2 {
+  padding: 6px 4px 2px;
+  color: var(--blue);
+}
+
+#track-mesh,
+#g-cloud {
+  display: block;
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+.card--drift {
+  grid-area: drift;
+  background-image:
+    linear-gradient(rgba(34, 75, 175, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 75, 175, 0.1) 1px, transparent 1px);
+  background-size: 22px 22px, 22px 22px;
+}
+
+.card--quali {
+  grid-area: quali;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding-left: 42px;
+}
+
+.card h2,
+.kicker {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+
+.readout {
+  margin-top: 10px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--blue);
+  text-shadow: none;
+}
+
+.readout--dim {
+  margin-top: 4px;
+  font-size: 22px;
+  opacity: 0.55;
+}
+
+.readout--sm {
+  font-size: 28px;
+}
+
+.meta {
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--blue);
+}
+
+.chart-pill {
+  grid-column: 1 / -1;
+  justify-self: center;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: #faf0e8;
+  border: 1px solid var(--blue);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+
+.chart-y {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  color: var(--blue);
+}
+
+#speed-chart {
+  width: 100%;
+  height: 100%;
+}
+
+.chart-x {
+  grid-column: 2;
+  display: flex;
+  justify-content: space-between;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  color: var(--blue);
+}
+
+.race-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.tags {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.tag {
+  padding: 2px 8px;
+  border: 1px solid var(--blue);
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--blue);
+}
+
+.burger {
+  width: 16px;
+  height: 12px;
+  background:
+    linear-gradient(var(--blue), var(--blue)) 0 0 / 100% 2px no-repeat,
+    linear-gradient(var(--blue), var(--blue)) 0 5px / 100% 2px no-repeat,
+    linear-gradient(var(--blue), var(--blue)) 0 10px / 100% 2px no-repeat;
+}
+
+.race-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.time {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 48px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--blue);
+  text-shadow: none;
+}
+
+.laps {
+  margin-top: 4px;
+  color: var(--blue);
+  font-size: 16px;
+}
+
+.car-cut {
+  width: 210px;
+  flex: 0 0 210px;
+}
+
+.car-cut img {
+  display: block;
+  width: 100%;
+  height: 86px;
+  object-fit: cover;
+  object-position: right center;
+  mix-blend-mode: normal;
+}
+
+.car-cut figcaption {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--blue);
+  text-align: right;
+}
+
+
+.drift-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.card--drift .kicker {
+  color: var(--blue);
+}
+
+.deg {
+  margin-top: 6px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 28px;
+  color: var(--blue);
+}
+
+.deg--dim {
+  font-size: 18px;
+  opacity: 0.5;
+}
+
+.pedals {
+  display: flex;
+  gap: 14px;
+}
+
+.pedal {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--blue);
+}
+
+.pedal b {
+  color: var(--blue);
+  font-family: "IBM Plex Mono", monospace;
+}
+
+.pedal__track {
+  position: relative;
+  width: 18px;
+  height: 88px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #faf0e8;
+  border: 1px solid var(--blue);
+}
+
+.pedal__track i {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 33%;
+  margin-top: 0;
+  background: var(--blue);
+  box-shadow: none;
+}
+
+.drift-mid {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-top: 18px;
+}
+
+.drift-car {
+  display: block;
+  width: 120px;
+  opacity: 0.72;
+  transform-origin: 50% 52%;
+  will-change: transform;
+  filter: brightness(0.7) saturate(1.05) drop-shadow(0 0 10px rgba(200, 100, 255, 0.55));
+}
+
+.gear {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 64px;
+  line-height: 0.9;
+  color: var(--blue);
+}
+
+.rpm {
+  color: var(--blue);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.flags {
+  display: flex;
+  gap: 10px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 42px;
+  color: var(--blue);
+}
+
+.speed-tab {
+  position: absolute;
+  left: 0;
+  top: 18px;
+  padding: 8px 6px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  background: #faf0e8;
+  color: var(--blue);
+  border: 1px solid var(--blue);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <section class="hud">
+        <header class="hud-bar">
+          <a class="hud-close" href="dashboard.html">
+            <span aria-hidden="true">×</span>
+            history tracks
+          </a>
+        </header>
+
+        <div class="gt">
+          <article class="card card--speed">
+            <h2>Speed</h2>
+            <p class="readout" id="gt-speed">80 km/h</p>
+            <p class="readout readout--dim" id="gt-speed-b">0 km/h</p>
+            <p class="meta">Gap — sec.</p>
+            <p class="readout readout--sm" id="gt-gap-m">1247 m</p>
+          </article>
+
+          <article class="card card--chart">
+            <p class="chart-pill">Speed and Gap</p>
+            <div class="chart-y" aria-hidden="true">
+              <span>300</span><span>250</span><span>200</span><span>150</span><span>100</span><span>50</span><span>0</span>
+            </div>
+            <canvas id="speed-chart" width="920" height="200"></canvas>
+            <div class="chart-x" aria-hidden="true">
+              <span>0</span><span>1000</span><span>2000</span><span>4000</span>
+            </div>
+          </article>
+
+          <article class="card card--race">
+            <div class="race-head">
+              <div>
+                <p class="kicker">Daily Race</p>
+                <div class="tags">
+                  <span class="tag">RH</span>
+                  <span class="tag">BoP Applied</span>
+                </div>
+              </div>
+              <span class="burger" aria-hidden="true"></span>
+            </div>
+            <div class="race-body">
+              <div>
+                <p class="time" id="gt-time">1:37.916</p>
+                <p class="laps" id="gt-laps">Lap 3/5</p>
+              </div>
+              <figure class="car-cut">
+                <img src="https://iili.io/nBtot5l.jpg" alt="Porsche 911 GT3 R" />
+                <figcaption>Porsche 911 GT3 R (992) '22</figcaption>
+              </figure>
+            </div>
+          </article>
+
+          <article class="card card--mesh">
+            <div class="mesh-body">
+              <div class="mesh-left">
+                <header class="mesh-title-bar">
+                  <h2>Circuit Gilles-Villeneuve</h2>
+                  <span class="burger" aria-hidden="true"></span>
+                </header>
+                <p class="mesh-sub">Circuit Gilles-Villeneuve</p>
+                <canvas id="track-mesh" width="800" height="420"></canvas>
+              </div>
+              <div class="mesh-right">
+                <h2>Centripetal Acceleration</h2>
+                <canvas id="g-cloud" width="440" height="420"></canvas>
+              </div>
+            </div>
+          </article>
+
+          <article class="card card--drift">
+            <div class="drift-top">
+              <div>
+                <p class="kicker">Drift Angle</p>
+                <p class="deg" id="gt-drift">0.9 degrees</p>
+                <p class="deg deg--dim" id="gt-drift-b">0.0 degrees</p>
+              </div>
+              <div class="pedals">
+                <div class="pedal">
+                  <div class="pedal__track"><i id="bar-thr"></i></div>
+                  <span>Throttle %</span>
+                  <b id="gt-thr">33</b>
+                </div>
+                <div class="pedal">
+                  <div class="pedal__track"><i id="bar-brk"></i></div>
+                  <span>Brake %</span>
+                  <b id="gt-brk">0</b>
+                </div>
+              </div>
+            </div>
+            <div class="drift-mid">
+              <img class="drift-car" id="drift-car" src="https://iili.io/nBtxJqu.png" alt="" />
+              <div class="gearbox">
+                <p class="gear" id="gt-gear">1</p>
+                <p class="rpm" id="gt-rpm">6821 rpm</p>
+              </div>
+              <div class="flags">
+                <span>N</span>
+                <span>O</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="card card--quali">
+            <span class="speed-tab">Speed</span>
+            <div>
+              <p class="kicker">Qualifying Time Trial</p>
+              <p class="time" id="gt-qtime">1:37.916</p>
+              <p class="laps" id="gt-qlaps">Lap 3/5</p>
+            </div>
+            <figure class="car-cut">
+              <img src="https://iili.io/nBtot5l.jpg" alt="Porsche 911 GT3 R" />
+              <figcaption>Porsche 911 GT3 R (992) '22</figcaption>
+            </figure>
+          </article>
+        </div>
+      </section>
+    </div>
+    <script>
+      function fitStage() {
+        const stage = document.querySelector(".stage");
+        const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+        stage.style.transform = "scale(" + scale + ")";
+      }
+      fitStage();
+      window.addEventListener("resize", fitStage);
+    </script>
+    <script>
+(function () {
+  const speedEl = document.getElementById("gt-speed");
+  const speedB = document.getElementById("gt-speed-b");
+  const gapM = document.getElementById("gt-gap-m");
+  const timeEl = document.getElementById("gt-time");
+  const lapsEl = document.getElementById("gt-laps");
+  const qTime = document.getElementById("gt-qtime");
+  const qLaps = document.getElementById("gt-qlaps");
+  const driftEl = document.getElementById("gt-drift");
+  const driftB = document.getElementById("gt-drift-b");
+  const driftCar = document.getElementById("drift-car");
+  const thrEl = document.getElementById("gt-thr");
+  const brkEl = document.getElementById("gt-brk");
+  const barThr = document.getElementById("bar-thr");
+  const barBrk = document.getElementById("bar-brk");
+  const gearEl = document.getElementById("gt-gear");
+  const rpmEl = document.getElementById("gt-rpm");
+  const chart = document.getElementById("speed-chart");
+  const gCanvas = document.getElementById("g-cloud");
+  const trackCanvas = document.getElementById("track-mesh");
+  if (!chart || !gCanvas || !trackCanvas) return;
+
+  const ctx = chart.getContext("2d");
+  const gtx = gCanvas.getContext("2d");
+  const trx = trackCanvas.getContext("2d");
+
+  const trace = [];
+  const N = 120;
+  for (let i = 0; i < N; i++) {
+    const u = i / (N - 1);
+    const v = 88 + Math.sin(u * 18) * 42 + Math.sin(u * 7.2) * 28 + (u > 0.72 ? -30 : 20);
+    trace.push(Math.max(40, Math.min(290, v)));
+  }
+
+  const st = {
+    speed: 80,
+    dist: 1247,
+    ms: 37.916 + 60,
+    lap: 3,
+    thr: 33,
+    brk: 0,
+    gear: 1,
+    rpm: 6821,
+    drift: 0.9,
+    carYaw: 0,
+    ax: 0,
+    ay: 0,
+  };
+
+  function fmtTime(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec - m * 60;
+    return m + ":" + s.toFixed(3).padStart(6, "0");
+  }
+
+  function catmullClosed(pts, steps) {
+    const n = pts.length;
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const p0 = pts[(i - 1 + n) % n];
+      const p1 = pts[i];
+      const p2 = pts[(i + 1) % n];
+      const p3 = pts[(i + 2) % n];
+      for (let s = 0; s < steps; s++) {
+        const t = s / steps;
+        const t2 = t * t;
+        const t3 = t2 * t;
+        out.push([
+          0.5 * (2 * p1[0] + (-p0[0] + p2[0]) * t + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3),
+          0.5 * (2 * p1[1] + (-p0[1] + p2[1]) * t + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3),
+        ]);
+      }
+    }
+    return out;
+  }
+
+  function gauss() {
+    let u = 0;
+    let v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(Math.PI * 2 * v);
+  }
+
+  /* Gilles-Villeneuve-like loop: hairpin west, chicanes east. */
+  const GV = [
+    [-100, 8],
+    [-96, 24],
+    [-84, 34],
+    [-62, 38],
+    [-28, 41],
+    [12, 43],
+    [48, 40],
+    [74, 34],
+    [90, 24],
+    [99, 12],
+    [96, 0],
+    [102, -10],
+    [94, -20],
+    [80, -28],
+    [48, -34],
+    [8, -37],
+    [-28, -34],
+    [-58, -26],
+    [-80, -14],
+    [-94, -2],
+  ];
+
+  const PITCH = 0.78;
+  const YAW = -0.34;
+  const CAM = 280;
+  const cyaw = Math.cos(YAW);
+  const syaw = Math.sin(YAW);
+  const cpitch = Math.cos(PITCH);
+  const spitch = Math.sin(PITCH);
+
+  const center = catmullClosed(GV, 10);
+  const nSta = center.length;
+
+  const GX0 = -128;
+  const GX1 = 128;
+  const GZ0 = -72;
+  const GZ1 = 78;
+  const NX = 42;
+  const NZ = 28;
+
+  function heightAt(x, z) {
+    const nx = x * 0.017;
+    const nz = z * 0.021;
+    let h = 0;
+    h += 28 * Math.sin(nx * 1.25 + 0.35) * Math.cos(nz * 1.05);
+    h += 16 * Math.sin(nx * 2.55 + nz * 1.45);
+    h += 10 * Math.cos(nx * 3.6 - nz * 2.2 + 1.1);
+    h += 4.5 * Math.sin(nx * 5.8) * Math.sin(nz * 4.7);
+    const ex = Math.abs(x) / 128;
+    const ez = Math.abs(z) / 78;
+    const fall = 1 - Math.pow(Math.max(ex, ez), 2.1) * 0.42;
+    return h * fall;
+  }
+
+  function projectRaw(p) {
+    const x1 = p[0] * cyaw - p[2] * syaw;
+    const z1 = p[0] * syaw + p[2] * cyaw;
+    const y2 = p[1] * cpitch - z1 * spitch;
+    const z2 = p[1] * spitch + z1 * cpitch;
+    const s = CAM / (CAM + z2 + 110);
+    return [x1 * s, y2 * s];
+  }
+
+  const terrain = [];
+  for (let j = 0; j <= NZ; j++) {
+    const row = [];
+    const z = GZ0 + ((GZ1 - GZ0) * j) / NZ;
+    for (let i = 0; i <= NX; i++) {
+      const x = GX0 + ((GX1 - GX0) * i) / NX;
+      row.push([x, heightAt(x, z), z]);
+    }
+    terrain.push(row);
+  }
+
+  const raceWorld = center.map((p) => [p[0], heightAt(p[0], p[1]) + 1.2, p[1]]);
+
+  const allPts = [];
+  terrain.forEach((row) => row.forEach((p) => allPts.push(projectRaw(p))));
+  raceWorld.forEach((p) => allPts.push(projectRaw(p)));
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  allPts.forEach((p) => {
+    if (p[0] < minX) minX = p[0];
+    if (p[1] < minY) minY = p[1];
+    if (p[0] > maxX) maxX = p[0];
+    if (p[1] > maxY) maxY = p[1];
+  });
+
+  function toCanvas(p, w, h) {
+    const pad = 22;
+    const sx = (w - pad * 2) / (maxX - minX);
+    const sy = (h - pad * 2) / (maxY - minY);
+    const k = Math.min(sx, sy);
+    const ox = (w - (maxX - minX) * k) / 2;
+    const oy = (h - (maxY - minY) * k) / 2 + 6;
+    return [ox + (p[0] - minX) * k, oy + (p[1] - minY) * k];
+  }
+
+  const grid2d = terrain.map((row) => row.map((p) => toCanvas(projectRaw(p), trackCanvas.width, trackCanvas.height)));
+  const race2d = raceWorld.map((p) => toCanvas(projectRaw(p), trackCanvas.width, trackCanvas.height));
+
+  function strokePoly(pts, close) {
+    trx.beginPath();
+    pts.forEach((p, i) => {
+      if (i === 0) trx.moveTo(p[0], p[1]);
+      else trx.lineTo(p[0], p[1]);
+    });
+    if (close) trx.closePath();
+    trx.stroke();
+  }
+
+  function drawTrack(now) {
+    const w = trackCanvas.width;
+    const h = trackCanvas.height;
+    trx.clearRect(0, 0, w, h);
+    trx.lineJoin = "round";
+    trx.lineCap = "round";
+
+    for (let j = 0; j < NZ; j++) {
+      for (let i = 0; i < NX; i++) {
+        const a = grid2d[j][i];
+        const b = grid2d[j][i + 1];
+        const c = grid2d[j + 1][i + 1];
+        const d = grid2d[j + 1][i];
+        const elev = (terrain[j][i][1] + terrain[j][i + 1][1] + terrain[j + 1][i + 1][1] + terrain[j + 1][i][1]) * 0.25;
+        const t = (elev + 36) / 72;
+        trx.fillStyle = "rgba(40, 160, 180, " + (0.04 + Math.max(0, Math.min(1, t)) * 0.08) + ")";
+        trx.beginPath();
+        trx.moveTo(a[0], a[1]);
+        trx.lineTo(b[0], b[1]);
+        trx.lineTo(c[0], c[1]);
+        trx.lineTo(d[0], d[1]);
+        trx.closePath();
+        trx.fill();
+      }
+    }
+
+    trx.strokeStyle = "rgba(90, 225, 240, 0.42)";
+    trx.lineWidth = 0.95;
+    for (let j = 0; j <= NZ; j++) strokePoly(grid2d[j], false);
+    for (let i = 0; i <= NX; i++) {
+      trx.beginPath();
+      for (let j = 0; j <= NZ; j++) {
+        const p = grid2d[j][i];
+        if (j === 0) trx.moveTo(p[0], p[1]);
+        else trx.lineTo(p[0], p[1]);
+      }
+      trx.stroke();
+    }
+
+    trx.strokeStyle = "rgba(120, 240, 255, 0.7)";
+    trx.lineWidth = 1.25;
+    for (let j = 0; j <= NZ; j += 4) strokePoly(grid2d[j], false);
+    for (let i = 0; i <= NX; i += 4) {
+      trx.beginPath();
+      for (let j = 0; j <= NZ; j++) {
+        const p = grid2d[j][i];
+        if (j === 0) trx.moveTo(p[0], p[1]);
+        else trx.lineTo(p[0], p[1]);
+      }
+      trx.stroke();
+    }
+
+    trx.shadowColor = "#7ef6ff";
+    trx.shadowBlur = 12;
+    trx.strokeStyle = "rgba(126, 246, 255, 0.95)";
+    trx.lineWidth = 2.6;
+    strokePoly(race2d, true);
+    trx.shadowBlur = 0;
+
+    const u = (now * 0.00009) % 1;
+    const i0 = Math.floor(u * nSta);
+    const i1 = (i0 + 1) % nSta;
+    const t = u * nSta - i0;
+    const px = race2d[i0][0] + (race2d[i1][0] - race2d[i0][0]) * t;
+    const py = race2d[i0][1] + (race2d[i1][1] - race2d[i0][1]) * t;
+    trx.fillStyle = "#f4ffff";
+    trx.shadowColor = "#7ef6ff";
+    trx.shadowBlur = 18;
+    trx.beginPath();
+    trx.arc(px, py, 4.2, 0, Math.PI * 2);
+    trx.fill();
+    trx.shadowBlur = 0;
+  }
+
+  const smokeSprite = document.createElement("canvas");
+  smokeSprite.width = 64;
+  smokeSprite.height = 64;
+  (function makeSprite() {
+    const s = smokeSprite.getContext("2d");
+    const g = s.createRadialGradient(32, 32, 0, 32, 32, 32);
+    g.addColorStop(0, "rgba(230, 255, 255, 1)");
+    g.addColorStop(0.12, "rgba(120, 245, 255, 0.55)");
+    g.addColorStop(0.32, "rgba(20, 210, 235, 0.18)");
+    g.addColorStop(0.58, "rgba(0, 150, 190, 0.05)");
+    g.addColorStop(1, "rgba(0, 0, 0, 0)");
+    s.fillStyle = g;
+    s.fillRect(0, 0, 64, 64);
+  })();
+
+  function metaball(x, y, cx, cy, r) {
+    const dx = x - cx;
+    const dy = y - cy;
+    return (r * r) / (dx * dx + dy * dy + 0.045);
+  }
+
+  function organicField(x, y, t) {
+    const px = x - Math.sin(t * 0.37) * 0.1;
+    const py = y - Math.cos(t * 0.29) * 0.08;
+    let f = 0;
+    f += 2.25 * metaball(px, py, 0.05, -0.58, 0.74);
+    f += 1.05 * metaball(px, py, -0.66, -0.1, 0.6);
+    f += 0.72 * metaball(px, py, 0.58, 0.08, 0.5);
+    f += 0.38 * metaball(px, py, -0.18, 0.4, 0.44);
+    f += 0.28 * metaball(px, py, 0.32, 0.36, 0.36);
+    f += 0.2 * metaball(px, py, Math.sin(t * 0.5) * 0.28, -0.22, 0.42);
+    const ang = Math.atan2(py + 0.22, px);
+    const rad = Math.hypot(px, py + 0.22);
+    const env =
+      1.02 +
+      0.3 * Math.cos(ang * 2 + 0.35) +
+      0.22 * Math.sin(ang * 3 - 0.4) +
+      0.12 * Math.cos(ang * 5 + t) +
+      0.2 * Math.cos(ang + Math.PI * 0.5);
+    if (rad > env) f *= Math.max(0, 1 - (rad - env) * 2.4);
+    return f;
+  }
+
+  const gSamples = [];
+  (function seedCloud() {
+    let tries = 0;
+    while (gSamples.length < 680 && tries < 90000) {
+      tries += 1;
+      const ax = (Math.random() - 0.5) * 4.1;
+      const ay = (Math.random() - 0.5) * 4.1;
+      const f = organicField(ax, ay, 0);
+      if (f < 0.88) continue;
+      const w = Math.pow(Math.min(1, (f - 0.88) / 2.6), 1.35);
+      const patch = 0.5 + 0.5 * Math.sin(ax * 5.4 + ay * 1.2) * Math.cos(ay * 4.6 - ax * 2.1);
+      const pocket = patch > 0.28 ? w : w * 0.12;
+      if (Math.random() > pocket) continue;
+      const core = f > 2.05 && patch > 0.42;
+      gSamples.push({
+        ax,
+        ay,
+        homeAx: ax,
+        homeAy: ay,
+        size: core ? 10 + Math.random() * 8 : 3.2 + Math.random() * 5.2,
+        a: core ? 0.08 + Math.random() * 0.06 : 0.045 + Math.random() * 0.05,
+        wob: Math.random() * Math.PI * 2,
+        ws: 0.22 + Math.random() * 0.7,
+      });
+    }
+    for (let i = 0; i < 140; i++) {
+      const ax = gauss() * 1.2;
+      const ay = 0.5 + Math.abs(gauss()) * 0.62;
+      if (Math.hypot(ax, ay) > 2.05) continue;
+      if (Math.random() > 0.55) continue;
+      gSamples.push({
+        ax,
+        ay,
+        homeAx: ax,
+        homeAy: ay,
+        size: 2.8 + Math.random() * 4.2,
+        a: 0.04 + Math.random() * 0.05,
+        wob: Math.random() * Math.PI * 2,
+        ws: 0.3 + Math.random() * 0.8,
+      });
+    }
+  })();
+
+  const gOff = document.createElement("canvas");
+  gOff.width = gCanvas.width;
+  gOff.height = gCanvas.height;
+  const gox = gOff.getContext("2d");
+
+  function drawG(now) {
+    const w = gCanvas.width;
+    const h = gCanvas.height;
+    const cx = w * 0.5;
+    const cy = h * 0.54;
+    const unit = Math.min(w, h) * 0.2;
+    const t = now * 0.001;
+    const leanX = st.ax * 0.12;
+    const leanY = st.ay * 0.1;
+
+    gox.clearRect(0, 0, w, h);
+    gox.globalCompositeOperation = "lighter";
+    gSamples.forEach((p) => {
+      p.ax = p.homeAx + Math.sin(t * p.ws + p.wob) * 0.055 + leanX;
+      p.ay = p.homeAy + Math.cos(t * p.ws * 0.82 + p.wob) * 0.048 + leanY;
+      const x = cx + p.ax * unit;
+      const y = cy - p.ay * unit;
+      gox.globalAlpha = p.a;
+      const s = p.size * (1 + 0.08 * Math.sin(t * p.ws * 1.4 + p.wob));
+      gox.drawImage(smokeSprite, x - s * 0.5, y - s * 0.5, s, s);
+    });
+    gox.globalAlpha = 1;
+
+    gtx.clearRect(0, 0, w, h);
+    gtx.strokeStyle = "rgba(176, 90, 210, 0.38)";
+    gtx.lineWidth = 1;
+    gtx.beginPath();
+    gtx.moveTo(cx, 16);
+    gtx.lineTo(cx, h - 18);
+    gtx.moveTo(16, cy);
+    gtx.lineTo(w - 16, cy);
+    gtx.stroke();
+    gtx.font = "11px 'IBM Plex Mono', monospace";
+    gtx.fillStyle = "rgba(200, 160, 220, 0.7)";
+    gtx.textAlign = "left";
+    [0.5, 1, 1.5, 2].forEach((g) => {
+      gtx.beginPath();
+      gtx.arc(cx, cy, unit * g, 0, Math.PI * 2);
+      gtx.stroke();
+      if (g === 1 || g === 2) gtx.fillText(g.toFixed(1), cx + unit * g + 6, cy - 5);
+    });
+
+    gtx.save();
+    gtx.filter = "blur(1.1px)";
+    gtx.globalAlpha = 0.5;
+    gtx.drawImage(gOff, 0, 0);
+    gtx.filter = "none";
+    gtx.globalCompositeOperation = "lighter";
+    gtx.globalAlpha = 0.42;
+    gtx.drawImage(gOff, 0, 0);
+    gtx.restore();
+  }
+
+  function drawChart() {
+    const w = chart.width;
+    const h = chart.height;
+    ctx.clearRect(0, 0, w, h);
+    ctx.strokeStyle = "rgba(170, 90, 210, 0.28)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 6; i++) {
+      const y = (i / 6) * h;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    trace.forEach((v, i) => {
+      const x = (i / (N - 1)) * w;
+      const y = h - (v / 300) * h;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.closePath();
+    const g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, "rgba(126,246,255,0.45)");
+    g.addColorStop(1, "rgba(126,246,255,0.02)");
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.beginPath();
+    trace.forEach((v, i) => {
+      const x = (i / (N - 1)) * w;
+      const y = h - (v / 300) * h;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = "#7ef6ff";
+    ctx.lineWidth = 2;
+    ctx.shadowColor = "#7ef6ff";
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  let last = performance.now();
+  function tick(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+
+    const phase = now * 0.0012;
+    st.speed = 72 + Math.abs(Math.sin(phase)) * 210 + Math.sin(phase * 3.1) * 18;
+    st.dist = 400 + ((now * 0.04) % 3600);
+    st.ms += dt;
+    if (st.ms > 99.9) {
+      st.ms = 32.4;
+      st.lap = st.lap >= 5 ? 1 : st.lap + 1;
+    }
+    const corner = Math.sin(phase * 2.2) > 0.45;
+    st.thr = corner ? 18 + Math.random() * 22 : 70 + Math.random() * 30;
+    st.brk = corner ? 20 + Math.random() * 40 : Math.random() * 4;
+    st.gear = st.speed < 90 ? 1 : st.speed < 140 ? 2 : st.speed < 190 ? 3 : st.speed < 240 ? 4 : st.speed < 280 ? 5 : 6;
+    st.rpm = 5200 + st.gear * 700 + (st.speed % 40) * 40 + Math.sin(now * 0.02) * 120;
+    const side = Math.sin(phase * 1.4);
+    const mag = corner ? 0.7 + Math.abs(Math.sin(phase * 3.15)) * 2.6 : Math.abs(Math.sin(phase * 7.4)) * 0.28;
+    const driftTarget = mag * (side >= 0 ? 1 : -1);
+    st.drift += (driftTarget - st.drift) * 0.1;
+    st.ax = (corner ? 1.55 : 0.18) * side;
+    st.ay = st.brk > 12 ? st.brk / 28 : -st.thr / 160;
+
+    const head = trace.shift();
+    trace.push(Math.max(40, Math.min(290, head * 0.04 + st.speed * 0.96 + (Math.random() - 0.5) * 8)));
+
+    speedEl.textContent = st.speed.toFixed(0) + " km/h";
+    speedB.textContent = Math.max(0, st.speed - 18).toFixed(0) + " km/h";
+    gapM.textContent = Math.round(st.dist) + " m";
+    const t = fmtTime(st.ms);
+    timeEl.textContent = t;
+    qTime.textContent = t;
+    lapsEl.textContent = "Lap " + st.lap + "/5";
+    qLaps.textContent = "Lap " + st.lap + "/5";
+    driftEl.textContent = st.drift.toFixed(1) + " degrees";
+    driftB.textContent = (st.drift * 0.35).toFixed(1) + " degrees";
+    if (driftCar) {
+      const yawTarget = Math.max(-34, Math.min(34, st.drift * 12));
+      st.carYaw += (yawTarget - st.carYaw) * 0.16;
+      driftCar.style.transform = "rotate(" + st.carYaw.toFixed(2) + "deg)";
+    }
+    thrEl.textContent = String(Math.round(st.thr));
+    brkEl.textContent = String(Math.round(st.brk));
+    barThr.style.height = st.thr.toFixed(0) + "%";
+    barBrk.style.height = st.brk.toFixed(0) + "%";
+    gearEl.textContent = String(st.gear);
+    rpmEl.textContent = Math.round(st.rpm) + " rpm";
+
+    drawChart();
+    drawTrack(now);
+    drawG(now);
+    requestAnimationFrame(tick);
+  }
+
+  drawChart();
+  drawTrack(performance.now());
+  drawG(performance.now());
+  requestAnimationFrame(tick);
+})();
+    </script>
+  </body>
+</html>
