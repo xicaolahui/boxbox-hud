@@ -1,0 +1,2856 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Driving Line Analysis — Turn 10</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+:root {
+  --stage: #faf0e8;
+  --hud: #faf0e8;
+  --panel: #faf0e8;
+  --ink: #e8f4f4;
+  --muted: #8aa8ab;
+  --cyan: #5ce8d8;
+  --pink: #e760d0;
+  --blue: #224baf;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--stage);
+  color: var(--ink);
+  font-family: "Barlow", sans-serif;
+}
+
+.stage {
+  width: 1920px;
+  height: 1080px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+  display: grid;
+  place-items: center;
+  background: var(--stage);
+}
+
+.hud {
+  width: 1840px;
+  height: 1000px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--hud);
+  border: 1px solid rgba(43, 32, 24, 0.12);
+  border-radius: 18px;
+  box-shadow: 0 18px 60px rgba(43, 32, 24, 0.12);
+}
+
+.hud-bar {
+  flex: 0 0 42px;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  background: #faf0e8;
+  border-bottom: 1px solid rgba(43, 32, 24, 0.1);
+}
+
+.hud-close {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #8a7464;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+}
+
+.hud-close span {
+  font-size: 22px;
+  line-height: 1;
+  color: #2b2018;
+}
+
+.hud-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 430px;
+  min-height: 0;
+}
+
+.hud.is-circuit1 .hud-body {
+  grid-template-columns: 320px 1fr 430px;
+}
+
+.viewport {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  background: #faf0e8;
+}
+
+.standings {
+  display: none;
+  padding: 16px 12px 12px 18px;
+  border-right: 1px solid rgba(34, 75, 175, 0.16);
+  overflow: hidden;
+  color: var(--blue);
+}
+
+.hud.is-circuit1 .standings {
+  display: block;
+}
+
+.standings h2,
+.tel-sec h3 {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+
+.standings ol {
+  list-style: none;
+  margin-top: 10px;
+}
+
+.stand-row {
+  display: grid;
+  grid-template-columns: 36px 78px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 8px 0 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--blue);
+}
+
+.stand-row.is-on {
+  background: rgba(34, 75, 175, 0.12);
+}
+
+.stand-row b,
+.stand-row em,
+.stand-row span {
+  font-style: normal;
+  font-weight: 600;
+}
+
+.stand-row b {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 14px;
+}
+
+.stand-row em {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+}
+
+.stand-row .gap {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: right;
+}
+
+.tyre-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 3px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #faf0e8;
+}
+
+.tyre-pill.c1 {
+  background: #d8dce6;
+  color: var(--blue);
+}
+.tyre-pill.c2 {
+  background: #3d7dff;
+}
+.tyre-pill.c3 {
+  background: #2f9e5a;
+}
+.tyre-pill.c4 {
+  background: #e8a317;
+  color: #2b2018;
+}
+.tyre-pill.c5 {
+  background: #d44848;
+}
+
+.viewport-tools {
+  position: absolute;
+  z-index: 12;
+  top: 22px;
+  left: 22px;
+  right: 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  pointer-events: none;
+}
+
+.viewport-tools .chip,
+.viewport-tools .mode-btn,
+.viewport-tools a {
+  pointer-events: auto;
+}
+
+.thumb-btn {
+  display: block;
+  width: 148px;
+  height: 86px;
+  overflow: hidden;
+  border: 1px solid var(--blue);
+  border-radius: 8px;
+  box-shadow: none;
+  background: #faf0e8;
+}
+
+.thumb-btn img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+.thumb-btn:hover {
+  border-color: var(--blue);
+  box-shadow: none;
+}
+
+.tools-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.tools-left .chip {
+  background: #faf0e8;
+  border: 1px solid var(--blue);
+  color: var(--blue);
+}
+
+.tools-left .chip--active {
+  background: #faf0e8;
+  color: var(--blue);
+}
+
+.tools-left .chip__menu {
+  background:
+    linear-gradient(var(--blue), var(--blue)) 0 0 / 100% 2px no-repeat,
+    linear-gradient(var(--blue), var(--blue)) 0 4px / 100% 2px no-repeat,
+    linear-gradient(var(--blue), var(--blue)) 0 8px / 100% 2px no-repeat;
+}
+
+.mode-switch {
+  display: flex;
+  flex-direction: column;
+  width: 148px;
+  overflow: hidden;
+  background: #faf0e8;
+  border: 1px solid var(--blue);
+  border-radius: 8px;
+}
+
+.mode-switch__label {
+  padding: 8px 12px 4px;
+  color: var(--blue);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.mode-btn {
+  height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-top: 1px solid rgba(34, 75, 175, 0.28);
+  background: transparent;
+  color: var(--blue);
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-decoration: none;
+  line-height: 36px;
+  display: block;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mode-btn:hover,
+.mode-btn.is-on {
+  background: rgba(34, 75, 175, 0.1);
+  color: var(--blue);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--blue);
+  border-radius: 6px;
+  background: #faf0e8;
+  color: var(--blue);
+  font-family: "Barlow", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.chip--active,
+.chip--ghost {
+  background: #faf0e8;
+  border: 1px solid var(--blue);
+  color: var(--blue);
+}
+
+.chip__menu,
+.chip__caret {
+  display: block;
+  width: 12px;
+  height: 10px;
+  opacity: 0.9;
+}
+
+.chip__menu {
+  background:
+    linear-gradient(var(--blue), var(--blue)) 0 0 / 100% 2px no-repeat,
+    linear-gradient(var(--blue), var(--blue)) 0 4px / 100% 2px no-repeat,
+    linear-gradient(var(--blue), var(--blue)) 0 8px / 100% 2px no-repeat;
+}
+
+.chip__caret {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid var(--blue);
+}
+
+.track {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: perspective(1600px) rotateX(var(--cam-tilt, 0deg)) scale(var(--cam-zoom, 1));
+  transform-origin: 50% 56%;
+}
+
+.hud.is-circuit1 .track.is-overview,
+.hud.is-circuit1 .track {
+  transform: none;
+}
+
+.track-line,
+.track-border,
+#track-fill,
+#drive-line {
+  pointer-events: none;
+  shape-rendering: geometricPrecision;
+}
+
+#world > rect {
+  pointer-events: none;
+}
+
+#flags {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.track.is-overview #flags {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.incident-flag {
+  cursor: pointer;
+}
+
+.comm-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: none;
+  overflow: hidden;
+  pointer-events: auto;
+  background: rgba(250, 240, 232, 0.18);
+}
+
+.comm-overlay.is-open {
+  display: block;
+}
+
+.comm-card {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(980px, 92%);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.comm-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.comm-title {
+  margin: 0;
+  color: var(--blue);
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.comm-caption {
+  z-index: 1;
+  width: 100%;
+  min-height: 132px;
+  padding: 18px 22px;
+  background: #fca453;
+  border-radius: 10px;
+  opacity: 0;
+  transform: scale(0.94);
+  pointer-events: none;
+}
+
+.comm-caption.is-in {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.32s ease, transform 0.32s ease;
+}
+
+.comm-caption p {
+  margin: 0;
+  min-height: 1.35em;
+  color: #2b2018;
+  font-family: "Barlow", sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+}
+
+.comm-canvas {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 300px;
+  width: 300px;
+  height: 360px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.comm-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.comm-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.comm-flash.is-on {
+  animation: comm-flash 0.55s ease-out forwards;
+}
+
+@keyframes comm-flash {
+  0% {
+    opacity: 0.96;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.comm-wait {
+  position: absolute;
+  left: 50%;
+  top: 18px;
+  z-index: 7;
+  margin: 0;
+  transform: translateX(-50%);
+  color: var(--blue);
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.comm-overlay.is-loading .comm-wait {
+  opacity: 1;
+}
+
+.incident-flag .flag-hit {
+  fill: transparent;
+}
+
+.hud-callouts {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.hud-callout {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 560px;
+  height: 180px;
+  margin-left: -280px;
+  margin-top: -90px;
+  overflow: visible;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.hud-callout.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.hud-callout svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  display: block;
+}
+
+.flag-tip {
+  pointer-events: none;
+}
+
+#cars circle,
+#cars image {
+  transform-box: fill-box;
+  transform-origin: center;
+  mix-blend-mode: normal;
+}
+
+.car-sprite {
+  pointer-events: none;
+}
+
+.car-dot {
+  display: none;
+  cursor: pointer;
+}
+
+.track.is-overview .car-dot {
+  display: block;
+}
+
+.track.is-overview .car-sprite {
+  display: none;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px 10px;
+  overflow: auto;
+  background: var(--panel);
+  border-left: 1px solid rgba(34, 75, 175, 0.16);
+  color: var(--blue);
+  scrollbar-width: thin;
+  scrollbar-color: var(--blue) rgba(34, 75, 175, 0.12);
+}
+
+.tel-top {
+  display: grid;
+  gap: 8px;
+}
+
+.tel-top h2 {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+
+.tel-arrow {
+  margin-left: 4px;
+  font-size: 0.72em;
+}
+
+.tel-select {
+  justify-self: start;
+  min-width: 132px;
+  padding: 6px 28px 6px 10px;
+  border: 1px solid var(--blue);
+  border-radius: 4px;
+  background: transparent url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%23224BAF'/></svg>") no-repeat right 10px center;
+  color: var(--blue);
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.tel-list {
+  display: grid;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.tel-list > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.tel-list dt {
+  font-size: 13px;
+  color: var(--blue);
+}
+
+.tel-list dd {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--blue);
+}
+
+.bar {
+  display: inline-block;
+  width: 88px;
+  height: 8px;
+  overflow: hidden;
+  border: 1px solid var(--blue);
+  border-radius: 2px;
+  background: transparent;
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+  background: var(--blue);
+}
+
+.panel .chip {
+  display: inline-block;
+  min-width: 42px;
+  height: auto;
+  padding: 1px 8px;
+  border: 1px solid var(--blue);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--blue);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-align: center;
+  cursor: default;
+}
+
+.grids {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.tyre-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.tyre-grid div {
+  display: grid;
+  gap: 4px;
+  padding: 7px 8px 8px;
+  border: 1px solid var(--blue);
+  border-radius: 4px;
+}
+
+.tyre-grid span {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.tyre-grid strong {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 14px;
+  font-weight: 500;
+}
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div class="stage">
+      <section class="hud" role="dialog" aria-labelledby="head-line">
+        <header class="hud-bar">
+          <a class="hud-close" href="index.html">
+            <span aria-hidden="true">×</span>
+            close
+          </a>
+        </header>
+
+        <div class="hud-body">
+          <aside class="standings" id="standings-col">
+            <h2>Standings</h2>
+            <ol id="standings"></ol>
+          </aside>
+
+          <div class="viewport">
+            <div class="viewport-tools">
+              <div class="tools-left">
+                <a class="thumb-btn" href="telemetry.html" title="Telemetry HUD">
+                  <img src="https://iili.io/nBtos0G.jpg?v=light" alt="Open telemetry dashboard" />
+                </a>
+                <button class="chip chip--active" type="button">
+                  Driving Line
+                  <span class="chip__menu" aria-hidden="true"></span>
+                </button>
+                <div class="mode-switch" role="group" aria-label="Camera views">
+                  <span class="mode-switch__label">View</span>
+                  <button class="mode-btn is-on" type="button" data-mode="close" id="mode-close" aria-pressed="true">
+                    Cockpit View
+                  </button>
+                  <button class="mode-btn" type="button" data-mode="overview" id="mode-overview" aria-pressed="false">
+                    Circuit1
+                  </button>
+                  <a class="mode-btn" href="track2.html">Circuit2</a>
+                </div>
+              </div>
+              <button class="chip chip--ghost" type="button">
+                Compare Laps
+                <span class="chip__caret" aria-hidden="true"></span>
+              </button>
+            </div>
+
+            <svg class="track" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <defs>
+                <pattern id="grid" width="36" height="36" patternUnits="userSpaceOnUse">
+                  <path d="M 36 0 L 0 0 0 36" fill="none" stroke="rgba(34,75,175,0.12)" stroke-width="1" />
+                </pattern>
+                <filter id="glow-callout" x="-180%" y="-180%" width="460%" height="460%">
+                  <feGaussianBlur stdDeviation="2.4" result="b" />
+                  <feMerge>
+                    <feMergeNode in="b" />
+                    <feMergeNode in="b" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+                <filter id="glow-pink" x="-120%" y="-120%" width="340%" height="340%">
+                  <feGaussianBlur stdDeviation="4.5" result="b" />
+                  <feMerge>
+                    <feMergeNode in="b" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+                <filter id="glow-red" x="-160%" y="-160%" width="420%" height="420%">
+                  <feGaussianBlur stdDeviation="4.8" result="b" />
+                  <feMerge>
+                    <feMergeNode in="b" />
+                    <feMergeNode in="b" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+                <filter id="car-soft" x="-90%" y="-90%" width="280%" height="280%">
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="2.1" result="glow" />
+                  <feColorMatrix
+                    in="glow"
+                    type="matrix"
+                    values="1.4 0 0.5 0 0.08
+                            0.2 0.35 0.2 0 0
+                            0.8 0 1.3 0 0.1
+                            0 0 0 0.55 0"
+                    result="pink"
+                  />
+                  <feMerge>
+                    <feMergeNode in="pink" />
+                    <feMergeNode in="pink" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+                <filter id="glow-blue" x="-120%" y="-120%" width="340%" height="340%">
+                  <feGaussianBlur stdDeviation="3.2" result="b" />
+                  <feMerge>
+                    <feMergeNode in="b" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <g id="world">
+              <rect x="-2400" y="-2400" width="6000" height="6000" fill="#faf0e8" />
+              <rect x="-2400" y="-2400" width="6000" height="6000" fill="url(#grid)" />
+              <path
+                id="track-fill"
+                fill="#224baf"
+                fill-opacity="0.1"
+                fill-rule="evenodd"
+                stroke="none"
+              />
+              <path
+                class="track-border"
+                id="track-border"
+                fill="none"
+                stroke="#224baf"
+                stroke-opacity="0.22"
+                stroke-width="1.15"
+                stroke-linejoin="round"
+                stroke-linecap="round"
+              />
+              <path
+                id="racing-line"
+                class="track-line"
+                fill="none"
+                stroke="none"
+                d="M 241.0 222.0 L 236.7 223.4 L 229.6 227.7 L 222.5 233.4 L 216.8 240.5 L 213.9 244.8 L 212.5 250.5 L 212.5 259.0 L 212.5 267.6 L 213.9 274.7 L 215.3 284.7 L 216.8 290.4 L 219.6 301.8 L 219.6 306.1 L 222.5 317.5 L 225.3 327.4 L 225.3 331.7 L 228.2 341.7 L 231.0 351.7 L 233.9 361.6 L 233.9 365.9 L 236.7 374.5 L 239.6 383.0 L 243.8 391.6 L 248.1 403.0 L 249.6 407.2 L 253.8 417.2 L 258.1 424.3 L 262.4 434.3 L 266.6 441.4 L 270.9 451.4 L 276.6 460.0 L 280.9 467.1 L 285.2 474.2 L 290.9 485.6 L 296.6 494.2 L 300.9 501.3 L 305.1 508.4 L 310.8 519.8 L 315.1 527.0 L 320.8 535.5 L 325.1 542.6 L 330.8 554.0 L 335.1 561.1 L 340.8 569.7 L 345.0 576.8 L 350.7 588.2 L 355.0 593.9 L 362.1 602.5 L 370.7 613.9 L 376.4 619.6 L 384.9 628.1 L 394.9 636.7 L 400.6 641.0 L 409.2 646.6 L 417.7 652.3 L 424.8 656.6 L 434.8 660.9 L 441.9 663.8 L 450.5 668.0 L 460.4 672.3 L 471.9 680.8 L 473.3 696.5 L 471.9 703.7 L 471.9 707.9 L 473.3 712.2 L 480.4 717.9 L 484.7 719.3 L 488.9 720.8 L 497.5 720.8 L 506.1 720.8 L 514.6 719.3 L 518.9 719.3 L 531.7 716.5 L 537.4 716.5 L 548.8 713.6 L 553.1 713.6 L 565.9 710.8 L 574.5 709.3 L 578.7 707.9 L 591.6 705.1 L 598.7 705.1 L 608.6 702.2 L 614.4 702.2 L 625.8 699.4 L 631.5 699.4 L 642.9 696.5 L 648.6 696.5 L 660.0 693.7 L 665.6 693.7 L 677.1 690.8 L 682.8 690.8 L 694.1 688.0 L 699.9 688.0 L 711.2 685.1 L 717.0 685.1 L 728.4 682.3 L 735.5 682.3 L 745.5 679.4 L 752.6 679.4 L 762.6 678.0 L 766.8 678.0 L 776.8 673.7 L 783.9 670.9 L 791.1 672.3 L 802.5 670.9 L 806.7 669.5 L 819.6 668.0 L 832.4 668.0 L 836.6 666.6 L 840.9 663.8 L 853.8 662.3 L 858.0 662.3 L 870.9 659.5 L 876.6 658.0 L 888.0 656.6 L 893.6 656.6 L 905.1 653.8 L 910.8 653.8 L 925.0 652.3 L 929.3 650.9 L 936.4 649.5 L 945.0 648.1 L 956.4 645.2 L 962.1 645.2 L 972.0 642.4 L 976.3 641.0 L 983.4 641.0 L 994.8 639.5 L 1004.8 638.1 L 1013.4 636.7 L 1017.6 635.2 L 1030.5 633.8 L 1037.6 631.0 L 1047.6 631.0 L 1056.1 631.0 L 1061.8 629.5 L 1073.2 628.1 L 1078.9 625.3 L 1088.9 625.3 L 1098.9 625.3 L 1104.5 623.8 L 1110.2 619.6 L 1117.4 615.3 L 1123.1 613.9 L 1127.4 606.8 L 1128.8 602.5 L 1128.8 595.3 L 1125.9 591.1 L 1121.7 586.8 L 1116.0 581.1 L 1108.8 578.2 L 1101.7 574.0 L 1093.2 571.1 L 1084.6 568.3 L 1076.1 565.4 L 1066.1 564.0 L 1061.8 562.6 L 1051.8 559.7 L 1041.8 556.9 L 1031.9 554.0 L 1027.6 554.0 L 1017.6 551.2 L 1007.6 548.3 L 1002.0 548.3 L 992.0 545.5 L 980.6 542.6 L 976.3 542.6 L 964.9 539.8 L 959.2 539.8 L 950.6 538.3 L 940.7 536.9 L 933.6 536.9 L 925.0 536.9 L 916.5 536.9 L 907.9 536.9 L 899.4 536.9 L 889.4 535.5 L 883.7 535.5 L 873.7 536.9 L 865.1 536.9 L 856.6 536.9 L 843.8 534.1 L 839.5 534.1 L 825.2 529.8 L 816.7 524.1 L 806.7 517.0 L 799.6 507.0 L 792.5 492.8 L 792.5 488.5 L 789.6 475.6 L 789.6 471.4 L 786.8 458.5 L 786.8 451.4 L 783.9 441.4 L 782.5 437.2 L 779.6 430.0 L 774.0 422.9 L 766.8 417.2 L 761.1 412.9 L 751.1 407.2 L 744.0 403.0 L 734.1 398.7 L 726.9 394.4 L 717.0 390.1 L 712.7 388.7 L 704.1 385.9 L 692.7 381.6 L 688.5 380.2 L 678.5 377.3 L 671.4 375.9 L 661.4 374.5 L 655.7 374.5 L 651.4 375.9 L 644.3 378.8 L 635.7 387.3 L 634.3 391.6 L 630.0 400.1 L 630.0 404.4 L 627.2 414.4 L 624.3 422.9 L 621.5 432.9 L 618.6 441.4 L 615.8 451.4 L 612.9 460.0 L 611.5 468.5 L 610.1 472.8 L 607.2 482.8 L 604.4 491.3 L 601.5 499.9 L 598.7 509.8 L 595.8 518.4 L 593.0 528.4 L 590.1 536.9 L 588.7 545.5 L 587.3 549.8 L 584.4 559.7 L 578.7 574.0 L 577.3 578.2 L 575.9 584.0 L 573.0 595.3 L 573.0 601.0 L 570.2 611.0 L 567.3 621.0 L 564.5 631.0 L 563.0 639.5 L 561.6 643.8 L 555.9 659.5 L 540.2 668.0 L 528.9 665.2 L 518.9 662.3 L 508.9 658.0 L 501.8 655.2 L 493.2 648.1 L 481.8 639.5 L 474.7 632.4 L 464.7 625.3 L 457.6 616.7 L 450.5 605.3 L 447.6 595.3 L 446.2 584.0 L 447.6 571.1 L 447.6 566.8 L 453.3 552.6 L 456.2 545.5 L 459.0 536.9 L 461.9 528.4 L 464.7 519.8 L 467.6 511.3 L 470.4 502.7 L 471.9 494.2 L 476.1 485.6 L 476.1 481.3 L 479.0 471.4 L 479.0 464.2 L 479.0 457.1 L 477.6 452.8 L 473.3 442.9 L 467.6 437.2 L 460.4 432.9 L 456.2 431.5 L 446.2 428.6 L 440.5 428.6 L 431.9 427.2 L 424.8 428.6 L 420.6 430.0 L 413.4 434.3 L 404.9 442.9 L 402.0 447.1 L 400.6 452.8 L 399.2 465.7 L 399.2 469.9 L 380.7 485.6 L 367.8 482.8 L 363.6 482.8 L 353.6 479.9 L 342.2 474.2 L 332.2 469.9 L 322.2 462.8 L 313.7 451.4 L 308.0 442.9 L 303.7 435.8 L 299.4 425.8 L 296.6 417.2 L 293.7 408.7 L 290.9 398.7 L 289.5 387.3 L 289.5 378.8 L 290.9 365.9 L 290.9 361.6 L 292.3 353.1 L 292.3 344.5 L 293.7 334.6 L 293.7 327.4 L 295.1 318.9 L 295.1 310.3 L 295.1 301.8 L 295.1 293.2 L 296.6 281.8 L 296.6 276.1 L 296.6 267.6 L 296.6 261.9 L 293.7 253.3 L 290.9 249.1 L 283.8 240.5 L 275.2 232.0 L 270.9 229.1 L 261.0 224.8 L 256.7 223.4 L 249.6 222.0 Z"
+              />
+              <path
+                id="drive-line"
+                fill="none"
+                stroke="#224baf"
+                stroke-width="2.05"
+                stroke-linejoin="round"
+                stroke-linecap="round"
+                filter="url(#glow-blue)"
+              />
+              <g id="flags"></g>
+              <g id="cars"></g>
+              </g>
+              <path
+                class="skyline"
+                fill="#faf0e8"
+                opacity="1"
+                d="M0 0 H400 V52 L372 38 L338 48 L304 28 L268 44 L232 22 L198 40 L162 18 L128 36 L92 16 L56 34 L24 20 L0 30 Z"
+              />
+            </svg>
+            <div class="hud-callouts" id="hud-callouts" aria-hidden="true"></div>
+            <div class="comm-overlay" id="comm-overlay" aria-hidden="true">
+              <div class="comm-card">
+                <div class="comm-canvas" id="comm-canvas"></div>
+                <div class="comm-copy">
+                  <h2 class="comm-title" id="comm-title">Driver Error</h2>
+                  <div class="comm-caption" id="comm-caption">
+                    <p id="comm-typed"></p>
+                  </div>
+                </div>
+              </div>
+              <div class="comm-flash" id="comm-flash"></div>
+              <p class="comm-wait" id="comm-wait">Loading driver…</p>
+            </div>
+          </div>
+
+          <aside class="panel">
+            <header class="tel-top">
+              <h2 id="head-line">
+                <span id="head-pos">P13</span>
+                <span id="head-num">23</span>
+                <span id="head-code">ALB</span>
+                <span class="tel-arrow" id="head-arrow">↑</span>
+              </h2>
+              <button class="tel-select" type="button" id="tel-select">#23 ALB</button>
+            </header>
+
+            <section class="tel-sec">
+              <h3>Race</h3>
+              <dl class="tel-list">
+                <div><dt>Position</dt><dd id="tel-position">P13</dd></div>
+                <div><dt>Lap</dt><dd id="tel-lap">49</dd></div>
+                <div><dt>Track</dt><dd>Silverstone</dd></div>
+                <div><dt>Gap Ahead</dt><dd id="tel-gap-ahead">+0.1s</dd></div>
+                <div><dt>Gap Behind</dt><dd id="tel-gap-behind">+0.4s</dd></div>
+                <div><dt>To Leader</dt><dd id="tel-leader">+8.6s</dd></div>
+              </dl>
+            </section>
+
+            <section class="tel-sec">
+              <h3>Performance</h3>
+              <dl class="tel-list">
+                <div><dt>Speed</dt><dd id="tel-speed">153 km/h</dd></div>
+                <div><dt>RPM</dt><dd id="tel-rpm">10859</dd></div>
+                <div><dt>Gear</dt><dd id="tel-gear">3</dd></div>
+                <div><dt>Current Lap</dt><dd id="tel-cur-lap">39.9s</dd></div>
+                <div><dt>Best Lap</dt><dd id="tel-best-lap">32.5s</dd></div>
+                <div><dt>Lap Distance</dt><dd id="tel-dist">1571 m</dd></div>
+              </dl>
+            </section>
+
+            <section class="tel-sec">
+              <h3>Controls</h3>
+              <dl class="tel-list">
+                <div>
+                  <dt>Throttle</dt>
+                  <dd>
+                    <span class="bar"><i id="bar-thr"></i></span>
+                    <span id="tel-thr">100%</span>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Brake</dt>
+                  <dd>
+                    <span class="bar"><i id="bar-brk"></i></span>
+                    <span id="tel-brk">0%</span>
+                  </dd>
+                </div>
+                <div>
+                  <dt>DRS</dt>
+                  <dd><span class="chip" id="tel-drs">OFF</span></dd>
+                </div>
+                <div><dt>ERS Battery</dt><dd id="tel-ers">98.9%</dd></div>
+              </dl>
+            </section>
+
+            <section class="tel-sec">
+              <h3>Tyres</h3>
+              <dl class="tel-list">
+                <div>
+                  <dt>Compound</dt>
+                  <dd><span class="tyre-pill" id="tel-compound">C5</span></dd>
+                </div>
+                <div><dt>Tyre Age</dt><dd id="tel-age">18 laps</dd></div>
+                <div><dt>Avg Wear</dt><dd id="tel-wear">6.8%</dd></div>
+                <div><dt>Fuel</dt><dd id="tel-fuel">15.2 L</dd></div>
+                <div><dt>Engine Temp</dt><dd id="tel-eng">115.6°C</dd></div>
+                <div><dt>Damage</dt><dd id="tel-dmg">0%</dd></div>
+              </dl>
+            </section>
+
+            <div class="grids">
+              <section class="tel-sec">
+                <h3>Tyre Temps</h3>
+                <div class="tyre-grid">
+                  <div><span>FL</span><strong id="tel-fl">105.7°C</strong></div>
+                  <div><span>FR</span><strong id="tel-fr">106.1°C</strong></div>
+                  <div><span>RL</span><strong id="tel-rl">104.8°C</strong></div>
+                  <div><span>RR</span><strong id="tel-rr">105.2°C</strong></div>
+                </div>
+              </section>
+              <section class="tel-sec">
+                <h3>Tyre Wear</h3>
+                <div class="tyre-grid">
+                  <div><span>FL</span><strong id="wear-fl">3.3%</strong></div>
+                  <div><span>FR</span><strong id="wear-fr">3.1%</strong></div>
+                  <div><span>RL</span><strong id="wear-rl">4.0%</strong></div>
+                  <div><span>RR</span><strong id="wear-rr">3.8%</strong></div>
+                </div>
+              </section>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </div>
+    <script>
+      function fitStage() {
+        const stage = document.querySelector(".stage");
+        const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+        stage.style.transform = "scale(" + scale + ")";
+      }
+      fitStage();
+      window.addEventListener("resize", fitStage);
+    </script>
+    <script>
+(function () {
+  const path = document.getElementById("racing-line");
+  const driveLine = document.getElementById("drive-line");
+  const trackBorder = document.getElementById("track-border");
+  const trackFill = document.getElementById("track-fill");
+  const layer = document.getElementById("cars");
+  if (!path || !layer) return;
+
+  const NS = "http://www.w3.org/2000/svg";
+
+  function samplePath(el, n) {
+    const len = el.getTotalLength();
+    const pts = [];
+    for (let i = 0; i < n; i++) {
+      const p = el.getPointAtLength((i / n) * len);
+      pts.push([p.x, p.y]);
+    }
+    return pts;
+  }
+
+  function laplacianOnce(pts, lambda) {
+    const n = pts.length;
+    const next = pts.map((p) => p.slice());
+    for (let i = 0; i < n; i++) {
+      const a = pts[(i - 1 + n) % n];
+      const b = pts[i];
+      const c = pts[(i + 1) % n];
+      next[i][0] = b[0] + lambda * ((a[0] + c[0]) * 0.5 - b[0]);
+      next[i][1] = b[1] + lambda * ((a[1] + c[1]) * 0.5 - b[1]);
+    }
+    return next;
+  }
+
+  function taubin(pts, iters) {
+    let cur = pts.map((p) => p.slice());
+    for (let n = 0; n < iters; n++) {
+      cur = laplacianOnce(cur, 0.5);
+      cur = laplacianOnce(cur, -0.53);
+    }
+    return cur;
+  }
+
+  function resampleClosed(pts, count) {
+    const n = pts.length;
+    const segs = [];
+    let total = 0;
+    for (let i = 0; i < n; i++) {
+      const a = pts[i];
+      const b = pts[(i + 1) % n];
+      const l = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      segs.push({ a, b, l });
+      total += l;
+    }
+    const out = [];
+    let si = 0;
+    let acc = 0;
+    for (let i = 0; i < count; i++) {
+      const target = (i / count) * total;
+      while (si < segs.length - 1 && acc + segs[si].l < target) {
+        acc += segs[si].l;
+        si += 1;
+      }
+      const s = segs[si];
+      const t = s.l > 1e-6 ? (target - acc) / s.l : 0;
+      out.push([s.a[0] + (s.b[0] - s.a[0]) * t, s.a[1] + (s.b[1] - s.a[1]) * t]);
+    }
+    return out;
+  }
+
+  function chaikinClosed(pts, iters) {
+    let cur = pts;
+    for (let k = 0; k < iters; k++) {
+      const next = [];
+      const n = cur.length;
+      for (let i = 0; i < n; i++) {
+        const a = cur[i];
+        const b = cur[(i + 1) % n];
+        next.push([a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25]);
+        next.push([a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75]);
+      }
+      cur = next;
+    }
+    return cur;
+  }
+
+  function turnRadius(pts, i, span) {
+    const n = pts.length;
+    const k = span || 1;
+    const a = pts[(i - k + n) % n];
+    const b = pts[i];
+    const c = pts[(i + k) % n];
+    const abx = b[0] - a[0];
+    const aby = b[1] - a[1];
+    const bcx = c[0] - b[0];
+    const bcy = c[1] - b[1];
+    const cax = a[0] - c[0];
+    const cay = a[1] - c[1];
+    const ab = Math.hypot(abx, aby) || 1;
+    const bc = Math.hypot(bcx, bcy) || 1;
+    const ca = Math.hypot(cax, cay) || 1;
+    const cross = abx * bcy - aby * bcx;
+    const r = (ab * bc * ca) / (2 * Math.abs(cross) + 1e-6);
+    return { r, cross };
+  }
+
+  function nearestOther(pts, i, minGap) {
+    const n = pts.length;
+    const b = pts[i];
+    let minD = 1e9;
+    for (let j = 0; j < n; j++) {
+      let g = Math.abs(i - j);
+      g = Math.min(g, n - g);
+      if (g < minGap) continue;
+      const d = Math.hypot(pts[j][0] - b[0], pts[j][1] - b[1]);
+      if (d < minD) minD = d;
+    }
+    return minD;
+  }
+
+  function offsetConstant(pts, dist) {
+    const n = pts.length;
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const a = pts[(i - 1 + n) % n];
+      const c = pts[(i + 1) % n];
+      const tx = c[0] - a[0];
+      const ty = c[1] - a[1];
+      const len = Math.hypot(tx, ty) || 1;
+      out.push([pts[i][0] - (ty / len) * dist, pts[i][1] + (tx / len) * dist]);
+    }
+    return out;
+  }
+
+  function ringArea(pts) {
+    let a = 0;
+    const n = pts.length;
+    for (let i = 0; i < n; i++) {
+      const p = pts[i];
+      const q = pts[(i + 1) % n];
+      a += p[0] * q[1] - q[0] * p[1];
+    }
+    return a;
+  }
+
+  function offsetPtsLimited(pts, dist) {
+    const n = pts.length;
+    const absD = Math.abs(dist);
+    const sgn = Math.sign(dist) || 1;
+    const widths = [];
+    const normals = [];
+    for (let i = 0; i < n; i++) {
+      const a = pts[(i - 1 + n) % n];
+      const b = pts[i];
+      const c = pts[(i + 1) % n];
+      const tx = c[0] - a[0];
+      const ty = c[1] - a[1];
+      const len = Math.hypot(tx, ty) || 1;
+      const nx = (-ty / len) * sgn;
+      const ny = (tx / len) * sgn;
+      normals.push([nx, ny]);
+      const { r, cross } = turnRadius(pts, i, 6);
+      const inward = cross * sgn > 0;
+      let d = absD;
+      if (inward) d = Math.min(d, Math.max(4.5, r * 0.58));
+      let near = 1e9;
+      let nearDot = 0;
+      for (let j = 0; j < n; j++) {
+        let g = Math.abs(i - j);
+        g = Math.min(g, n - g);
+        if (g < 10) continue;
+        const dx = pts[j][0] - b[0];
+        const dy = pts[j][1] - b[1];
+        const dd = Math.hypot(dx, dy);
+        if (dd < near) {
+          near = dd;
+          nearDot = dx * nx + dy * ny;
+        }
+      }
+      if (nearDot > 0) d = Math.min(d, Math.max(4.5, near * 0.34));
+      widths.push(d);
+    }
+    const smoothW = limitDelta(blurCircular(widths, 18, 6), 0.08);
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const b = pts[i];
+      const nx = normals[i][0];
+      const ny = normals[i][1];
+      const d = smoothW[i];
+      out.push([b[0] + nx * d, b[1] + ny * d]);
+    }
+    return out;
+  }
+
+  function fairEdge(pts) {
+    return resampleClosed(chaikinClosed(lightSmooth(pts, 5), 2), pts.length);
+  }
+
+  function lightSmooth(pts, passes) {
+    let cur = pts.map((p) => p.slice());
+    for (let i = 0; i < passes; i++) cur = laplacianOnce(cur, 0.28);
+    return cur;
+  }
+
+  function anisotropicSmooth(pts, iters) {
+    let cur = pts.map((p) => p.slice());
+    for (let pass = 0; pass < iters; pass++) {
+      const next = cur.map((p) => p.slice());
+      const n = cur.length;
+      for (let i = 0; i < n; i++) {
+        const { r } = turnRadius(cur, i);
+        const lambda = r < 28 ? 0.58 : r < 50 ? 0.42 : r < 90 ? 0.28 : 0.16;
+        const a = cur[(i - 1 + n) % n];
+        const b = cur[i];
+        const c = cur[(i + 1) % n];
+        next[i][0] = b[0] + lambda * ((a[0] + c[0]) * 0.5 - b[0]);
+        next[i][1] = b[1] + lambda * ((a[1] + c[1]) * 0.5 - b[1]);
+      }
+      cur = next;
+    }
+    return cur;
+  }
+
+  function flattenStraights(pts, maxAng, minRun) {
+    const n = pts.length;
+    const angs = new Array(n);
+    for (let i = 0; i < n; i++) {
+      const a = pts[(i - 1 + n) % n];
+      const b = pts[i];
+      const c = pts[(i + 1) % n];
+      const ax = b[0] - a[0];
+      const ay = b[1] - a[1];
+      const bx = c[0] - b[0];
+      const by = c[1] - b[1];
+      const al = Math.hypot(ax, ay) || 1;
+      const bl = Math.hypot(bx, by) || 1;
+      angs[i] = Math.acos(Math.max(-1, Math.min(1, (ax * bx + ay * by) / (al * bl))));
+    }
+    const out = pts.map((p) => p.slice());
+    const lim = (maxAng * Math.PI) / 180;
+    let i = 0;
+    while (i < n) {
+      if (angs[i] > lim) {
+        i += 1;
+        continue;
+      }
+      let j = i + 1;
+      while (j < i + n - 4 && angs[j % n] <= lim) j += 1;
+      const span = j - i;
+      if (span >= minRun) {
+        let total = 0;
+        for (let k = i; k < j; k++) total += angs[k % n];
+        if (total <= (7.5 * Math.PI) / 180) {
+          const a = pts[i % n];
+          const b = pts[j % n];
+          for (let k = 1; k < span; k++) {
+            const t = k / span;
+            const idx = (i + k) % n;
+            out[idx][0] = a[0] + (b[0] - a[0]) * t;
+            out[idx][1] = a[1] + (b[1] - a[1]) * t;
+          }
+        }
+      }
+      i = Math.max(i + 1, j);
+    }
+    return out;
+  }
+
+  function resampleAdaptive(pts) {
+    const n = pts.length;
+    const keep = [0];
+    let acc = 0;
+    for (let i = 1; i < n; i++) {
+      const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+      acc += d;
+      const { r } = turnRadius(pts, i);
+      const maxSpan = r < 22 ? 7 : r < 50 ? 11 : r < 95 ? 17 : r < 180 ? 26 : 46;
+      if (acc >= maxSpan) {
+        keep.push(i);
+        acc = 0;
+      }
+    }
+    if (keep[keep.length - 1] !== n - 1) keep.push(n - 1);
+    const out = keep.map((i) => pts[i].slice());
+    if (out.length >= 2) {
+      const a = out[0];
+      const b = out[out.length - 1];
+      if (Math.hypot(a[0] - b[0], a[1] - b[1]) < 8) out.pop();
+    }
+    return out;
+  }
+
+  function rdpSeg(pts, eps) {
+    if (pts.length < 3) return pts.map((p) => p.slice());
+    const a = pts[0];
+    const b = pts[pts.length - 1];
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+    const lab = Math.hypot(dx, dy) || 1;
+    let maxD = -1;
+    let idx = -1;
+    for (let i = 1; i < pts.length - 1; i++) {
+      const d = Math.abs(dx * (pts[i][1] - a[1]) - dy * (pts[i][0] - a[0])) / lab;
+      if (d > maxD) {
+        maxD = d;
+        idx = i;
+      }
+    }
+    if (maxD > eps) {
+      const left = rdpSeg(pts.slice(0, idx + 1), eps);
+      const right = rdpSeg(pts.slice(idx), eps);
+      return left.slice(0, -1).concat(right);
+    }
+    return [a.slice(), b.slice()];
+  }
+
+  function simplifyClosed(pts, eps) {
+    const n = pts.length;
+    if (n < 8) return pts.map((p) => p.slice());
+    let iMin = 0;
+    let iMax = 0;
+    for (let i = 1; i < n; i++) {
+      const s = pts[i][0] + pts[i][1];
+      if (s < pts[iMin][0] + pts[iMin][1]) iMin = i;
+      if (s > pts[iMax][0] + pts[iMax][1]) iMax = i;
+    }
+    if (iMin === iMax) {
+      const open = pts.concat([pts[0]]);
+      return rdpSeg(open, eps).slice(0, -1);
+    }
+    const arcA = [];
+    for (let i = iMin; i !== iMax; i = (i + 1) % n) arcA.push(pts[i]);
+    arcA.push(pts[iMax]);
+    const arcB = [];
+    for (let i = iMax; i !== iMin; i = (i + 1) % n) arcB.push(pts[i]);
+    arcB.push(pts[iMin]);
+    const a = rdpSeg(arcA, eps);
+    const b = rdpSeg(arcB, eps);
+    return a.slice(0, -1).concat(b.slice(0, -1));
+  }
+
+  function filletSharp(pts) {
+    const n = pts.length;
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const a = pts[(i - 1 + n) % n];
+      const b = pts[i];
+      const c = pts[(i + 1) % n];
+      const inx = b[0] - a[0];
+      const iny = b[1] - a[1];
+      const ox = c[0] - b[0];
+      const oy = c[1] - b[1];
+      const lin = Math.hypot(inx, iny) || 1;
+      const lout = Math.hypot(ox, oy) || 1;
+      const uix = inx / lin;
+      const uiy = iny / lin;
+      const uox = ox / lout;
+      const uoy = oy / lout;
+      const cross = uix * uoy - uiy * uox;
+      const dot = Math.max(-1, Math.min(1, uix * uox + uiy * uoy));
+      const turn = Math.acos(dot);
+      const deg = (turn * 180) / Math.PI;
+      if (deg < 7) {
+        out.push([b[0], b[1]]);
+        continue;
+      }
+      let radius = deg > 75 ? 36 : deg > 40 ? 58 : deg > 20 ? 96 : 170;
+      let t = radius * Math.tan(turn / 2);
+      const maxT = Math.min(lin, lout) * 0.42;
+      if (t > maxT) t = maxT;
+      const R = t / Math.tan(turn / 2);
+      if (R < 5 || t < 2.5) {
+        out.push([b[0], b[1]]);
+        continue;
+      }
+      const p0 = [b[0] - uix * t, b[1] - uiy * t];
+      const p1 = [b[0] + uox * t, b[1] + uoy * t];
+      const side = cross >= 0 ? 1 : -1;
+      const cx = p0[0] - uiy * side * R;
+      const cy = p0[1] + uix * side * R;
+      const a0 = Math.atan2(p0[1] - cy, p0[0] - cx);
+      const a1 = Math.atan2(p1[1] - cy, p1[0] - cx);
+      let da = a1 - a0;
+      if (side > 0) {
+        while (da <= 0) da += Math.PI * 2;
+        while (da > Math.PI * 2) da -= Math.PI * 2;
+      } else {
+        while (da >= 0) da -= Math.PI * 2;
+        while (da < -Math.PI * 2) da += Math.PI * 2;
+      }
+      if (Math.abs(da) > Math.PI) da += da > 0 ? -Math.PI * 2 : Math.PI * 2;
+      const steps = Math.max(6, Math.round((Math.abs(da) * 14) / Math.PI));
+      for (let s = 0; s <= steps; s++) {
+        const ang = a0 + da * (s / steps);
+        out.push([cx + Math.cos(ang) * R, cy + Math.sin(ang) * R]);
+      }
+    }
+    return out;
+  }
+
+  function dedupeClose(pts, minD) {
+    const out = [];
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      const prev = out.length ? out[out.length - 1] : null;
+      if (!prev || Math.hypot(p[0] - prev[0], p[1] - prev[1]) >= minD) out.push(p);
+    }
+    if (out.length > 2) {
+      const a = out[0];
+      const b = out[out.length - 1];
+      if (Math.hypot(a[0] - b[0], a[1] - b[1]) < minD) out.pop();
+    }
+    return out;
+  }
+
+  function collapseShort(pts, minLen) {
+    const keep = [];
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      const prev = keep.length ? keep[keep.length - 1] : null;
+      if (!prev || Math.hypot(p[0] - prev[0], p[1] - prev[1]) >= minLen) keep.push(p.slice());
+      else {
+        prev[0] = (prev[0] + p[0]) * 0.5;
+        prev[1] = (prev[1] + p[1]) * 0.5;
+      }
+    }
+    if (keep.length > 3) {
+      const a = keep[0];
+      const b = keep[keep.length - 1];
+      if (Math.hypot(a[0] - b[0], a[1] - b[1]) < minLen) keep.pop();
+    }
+    return keep.length >= 12 ? keep : pts.map((p) => p.slice());
+  }
+
+  function enforceMinRadius(pts, minR, iters) {
+    let cur = pts.map((p) => p.slice());
+    for (let pass = 0; pass < iters; pass++) {
+      const n = cur.length;
+      const next = cur.map((p) => p.slice());
+      for (let i = 0; i < n; i++) {
+        const a = cur[(i - 1 + n) % n];
+        const b = cur[i];
+        const c = cur[(i + 1) % n];
+        const inx = b[0] - a[0];
+        const iny = b[1] - a[1];
+        const ox = c[0] - b[0];
+        const oy = c[1] - b[1];
+        const lin = Math.hypot(inx, iny) || 1;
+        const lout = Math.hypot(ox, oy) || 1;
+        const uix = inx / lin;
+        const uiy = iny / lin;
+        const uox = ox / lout;
+        const uoy = oy / lout;
+        const cross = uix * uoy - uiy * uox;
+        const dot = Math.max(-1, Math.min(1, uix * uox + uiy * uoy));
+        const turn = Math.acos(dot);
+        const { r } = turnRadius(cur, i);
+        if (r >= minR) continue;
+        if (turn < 0.03) continue;
+        const tx = uix + uox;
+        const ty = uiy + uoy;
+        const tl = Math.hypot(tx, ty) || 1;
+        const nx = -ty / tl;
+        const ny = tx / tl;
+        const inward = cross >= 0 ? 1 : -1;
+        const push = Math.min(2.1, Math.max(0.25, (minR - r) * 0.22));
+        next[i][0] = b[0] - inward * nx * push;
+        next[i][1] = b[1] - inward * ny * push;
+      }
+      cur = next;
+    }
+    return cur;
+  }
+
+  function fairClosed(pts, count) {
+    return resampleClosed(chaikinClosed(taubin(pts, 12), 5), count);
+  }
+
+  function cornerFillet(a, b, c) {
+    const inx = b[0] - a[0];
+    const iny = b[1] - a[1];
+    const ox = c[0] - b[0];
+    const oy = c[1] - b[1];
+    const lin = Math.hypot(inx, iny) || 1;
+    const lout = Math.hypot(ox, oy) || 1;
+    const uix = inx / lin;
+    const uiy = iny / lin;
+    const uox = ox / lout;
+    const uoy = oy / lout;
+    const cross = uix * uoy - uiy * uox;
+    const dot = Math.max(-1, Math.min(1, uix * uox + uiy * uoy));
+    const turn = Math.acos(dot);
+    const deg = (turn * 180) / Math.PI;
+    if (deg < 4.5) return null;
+    let radius = deg > 95 ? 48 : deg > 55 ? 56 : deg > 28 ? 82 : deg > 14 ? 140 : 220;
+    let t = radius * Math.tan(turn / 2);
+    const maxT = Math.min(lin, lout) * 0.47;
+    if (t > maxT) t = maxT;
+    const R = t / Math.tan(turn / 2);
+    if (!(R > 8) || t < 3) return null;
+    const p0 = [b[0] - uix * t, b[1] - uiy * t];
+    const p1 = [b[0] + uox * t, b[1] + uoy * t];
+    const side = cross >= 0 ? 1 : -1;
+    const cx = p0[0] - uiy * side * R;
+    const cy = p0[1] + uix * side * R;
+    const a0 = Math.atan2(p0[1] - cy, p0[0] - cx);
+    const a1 = Math.atan2(p1[1] - cy, p1[0] - cx);
+    let da = a1 - a0;
+    while (da > Math.PI) da -= Math.PI * 2;
+    while (da < -Math.PI) da += Math.PI * 2;
+    if (Math.abs(da) < 0.08 || Math.abs(da) > Math.PI - 0.02) return null;
+    return { p0, p1, cx, cy, R, a0, da };
+  }
+
+  function appendArc(parts, f) {
+    const nSeg = Math.max(1, Math.ceil(Math.abs(f.da) / (Math.PI / 2)));
+    const step = f.da / nSeg;
+    for (let i = 0; i < nSeg; i++) {
+      const t0 = f.a0 + step * i;
+      const t1 = t0 + step;
+      const k = (4 / 3) * Math.tan(step / 4);
+      const x0 = f.cx + f.R * Math.cos(t0);
+      const y0 = f.cy + f.R * Math.sin(t0);
+      const x1 = f.cx + f.R * Math.cos(t1);
+      const y1 = f.cy + f.R * Math.sin(t1);
+      const c1x = x0 - k * f.R * Math.sin(t0);
+      const c1y = y0 + k * f.R * Math.cos(t0);
+      const c2x = x1 + k * f.R * Math.sin(t1);
+      const c2y = y1 - k * f.R * Math.cos(t1);
+      parts.push(
+        "C " +
+          c1x.toFixed(2) +
+          " " +
+          c1y.toFixed(2) +
+          " " +
+          c2x.toFixed(2) +
+          " " +
+          c2y.toFixed(2) +
+          " " +
+          x1.toFixed(2) +
+          " " +
+          y1.toFixed(2)
+      );
+    }
+  }
+
+  function roundedPolyPath(pts) {
+    const n = pts.length;
+    if (n < 3) return "";
+    const fillets = [];
+    for (let i = 0; i < n; i++) {
+      fillets.push(
+        cornerFillet(pts[(i - 1 + n) % n], pts[i], pts[(i + 1) % n])
+      );
+    }
+    const parts = [];
+    for (let i = 0; i < n; i++) {
+      const f = fillets[i];
+      const start = f ? f.p0 : pts[i];
+      if (i === 0) parts.push("M " + start[0].toFixed(2) + " " + start[1].toFixed(2));
+      else parts.push("L " + start[0].toFixed(2) + " " + start[1].toFixed(2));
+      if (f) appendArc(parts, f);
+    }
+    parts.push("Z");
+    return parts.join(" ");
+  }
+
+  function blurCircular(arr, radius, passes) {
+    let cur = arr.slice();
+    const n = cur.length;
+    for (let p = 0; p < passes; p++) {
+      const next = new Array(n);
+      for (let i = 0; i < n; i++) {
+        let sum = 0;
+        let w = 0;
+        for (let k = -radius; k <= radius; k++) {
+          const wk = radius + 1 - Math.abs(k);
+          sum += cur[(i + k + n) % n] * wk;
+          w += wk;
+        }
+        next[i] = sum / w;
+      }
+      cur = next;
+    }
+    return cur;
+  }
+
+  function limitDelta(arr, maxStep) {
+    const n = arr.length;
+    const out = arr.slice();
+    for (let pass = 0; pass < 4; pass++) {
+      for (let i = 0; i < n; i++) {
+        const i0 = (i - 1 + n) % n;
+        const d = out[i] - out[i0];
+        if (d > maxStep) out[i] = out[i0] + maxStep;
+        else if (d < -maxStep) out[i] = out[i0] - maxStep;
+      }
+    }
+    return out;
+  }
+
+  function sample1d(arr, s) {
+    const t = ((s % length) + length) % length;
+    const idx = (t / length) * SAMPLES;
+    const i = Math.floor(idx);
+    const u = idx - i;
+    const n = arr.length;
+    const p0 = arr[(i - 1 + n) % n];
+    const p1 = arr[i % n];
+    const p2 = arr[(i + 1) % n];
+    const p3 = arr[(i + 2) % n];
+    const u2 = u * u;
+    const u3 = u2 * u;
+    return (
+      0.5 *
+      (2 * p1 +
+        (-p0 + p2) * u +
+        (2 * p0 - 5 * p1 + 4 * p2 - p3) * u2 +
+        (-p0 + 3 * p1 - 3 * p2 + p3) * u3)
+    );
+  }
+
+  function bspline(pts) {
+    const n = pts.length;
+    if (n < 3) return "";
+    const p0 = pts[n - 1];
+    const p1 = pts[0];
+    const p2 = pts[1];
+    const sx = (p0[0] + 4 * p1[0] + p2[0]) / 6;
+    const sy = (p0[1] + 4 * p1[1] + p2[1]) / 6;
+    let d = "M " + sx.toFixed(2) + " " + sy.toFixed(2);
+    for (let i = 0; i < n; i++) {
+      const a = pts[i];
+      const b = pts[(i + 1) % n];
+      const c = pts[(i + 2) % n];
+      const c1x = (4 * a[0] + 2 * b[0]) / 6;
+      const c1y = (4 * a[1] + 2 * b[1]) / 6;
+      const c2x = (2 * a[0] + 4 * b[0]) / 6;
+      const c2y = (2 * a[1] + 4 * b[1]) / 6;
+      const ex = (a[0] + 4 * b[0] + c[0]) / 6;
+      const ey = (a[1] + 4 * b[1] + c[1]) / 6;
+      d +=
+        " C " +
+        c1x.toFixed(2) +
+        " " +
+        c1y.toFixed(2) +
+        " " +
+        c2x.toFixed(2) +
+        " " +
+        c2y.toFixed(2) +
+        " " +
+        ex.toFixed(2) +
+        " " +
+        ey.toFixed(2);
+    }
+    return d;
+  }
+
+  function catmull(pts) {
+    const n = pts.length;
+    if (n < 3) return "";
+    let d = "M " + pts[0][0].toFixed(2) + " " + pts[0][1].toFixed(2);
+    for (let i = 0; i < n; i++) {
+      const p0 = pts[(i - 1 + n) % n];
+      const p1 = pts[i];
+      const p2 = pts[(i + 1) % n];
+      const p3 = pts[(i + 2) % n];
+      const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+      const c1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const c2x = p2[0] - (p3[0] - p1[0]) / 6;
+      const c2y = p2[1] - (p3[1] - p1[1]) / 6;
+      d +=
+        " C " +
+        c1x.toFixed(2) +
+        " " +
+        c1y.toFixed(2) +
+        " " +
+        c2x.toFixed(2) +
+        " " +
+        c2y.toFixed(2) +
+        " " +
+        p2[0].toFixed(2) +
+        " " +
+        p2[1].toFixed(2);
+    }
+    return d;
+  }
+
+  const center = fairClosed(samplePath(path, 640), 280);
+  const centerD = catmull(center);
+  path.setAttribute("d", centerD);
+  path.setAttribute("stroke", "none");
+  path.setAttribute("fill", "none");
+
+  const TRACK_HW = 16;
+  const TRACK_OUTLINE = 1.15;
+  const posRing = offsetConstant(center, TRACK_HW);
+  const negRing = offsetConstant(center, -TRACK_HW);
+  const posIsInner = Math.abs(ringArea(posRing)) < Math.abs(ringArea(negRing));
+  const outer = fairEdge(offsetConstant(center, posIsInner ? -TRACK_HW : TRACK_HW));
+  const inner = fairEdge(offsetPtsLimited(center, posIsInner ? TRACK_HW : -TRACK_HW));
+  const outerD = catmull(outer);
+  const innerD = catmull(inner);
+  if (trackFill) {
+    trackFill.setAttribute("d", outerD + catmull(inner.slice().reverse()));
+    trackFill.setAttribute("fill", "#224baf");
+    trackFill.setAttribute("fill-opacity", "0.1");
+    trackFill.setAttribute("fill-rule", "evenodd");
+    trackFill.setAttribute("stroke", "none");
+  }
+  if (trackBorder) {
+    trackBorder.setAttribute("d", outerD + innerD);
+    trackBorder.setAttribute("fill", "none");
+    trackBorder.setAttribute("stroke", "#224baf");
+    trackBorder.setAttribute("stroke-opacity", "0.22");
+    trackBorder.setAttribute("stroke-width", String(TRACK_OUTLINE));
+    trackBorder.setAttribute("stroke-linejoin", "round");
+    trackBorder.setAttribute("stroke-linecap", "round");
+    trackBorder.removeAttribute("filter");
+  }
+
+  const SAMPLES = 360;
+  const CIRCUIT_M = 5543;
+  const length = path.getTotalLength();
+  const mPerPx = CIRCUIT_M / length;
+
+  const samples = [];
+  for (let i = 0; i < SAMPLES; i++) {
+    const s = (i / SAMPLES) * length;
+    const a = path.getPointAtLength((s - 4 + length) % length);
+    const b = path.getPointAtLength(s);
+    const c = path.getPointAtLength((s + 4) % length);
+    const abx = b.x - a.x;
+    const aby = b.y - a.y;
+    const bcx = c.x - b.x;
+    const bcy = c.y - b.y;
+    const ab = Math.hypot(abx, aby) || 1;
+    const bc = Math.hypot(bcx, bcy) || 1;
+    const cross = abx * bcy - aby * bcx;
+    const dot = abx * bcx + aby * bcy;
+    const ang = Math.atan2(cross, dot);
+    const k = Math.abs(ang) / ((ab + bc) * 0.5);
+    const tx = bcx / bc;
+    const ty = bcy / bc;
+    samples.push({
+      s,
+      x: b.x,
+      y: b.y,
+      tx,
+      ty,
+      nx: -ty,
+      ny: tx,
+      k,
+      signedK: ang / ((ab + bc) * 0.5),
+    });
+  }
+
+  const signedRaw = samples.map((p) => p.signedK);
+  let signedArr = blurCircular(signedRaw, 10, 6);
+  signedArr.forEach((v, i) => {
+    samples[i].signedK = v;
+    samples[i].k = Math.abs(v);
+  });
+
+  const kMax = samples.reduce((m, p) => Math.max(m, p.k), 0.0001);
+  const leftEdge = posIsInner ? inner : outer;
+  const rightEdge = posIsInner ? outer : inner;
+  const nC = center.length;
+  let kRace = blurCircular(signedRaw, 5, 2);
+  const kRaceMax = kRace.reduce((m, v) => Math.max(m, Math.abs(v)), 0.0001);
+  const lookEntry = Math.round(SAMPLES * 0.055);
+  const lookExit = Math.round(SAMPLES * 0.048);
+
+  let offsets = kRace.map((k0, i) => {
+    let ahead = 0;
+    let aheadW = 0;
+    let behind = 0;
+    let behindW = 0;
+    for (let d = 1; d <= lookEntry; d++) {
+      const w = 1 - d / (lookEntry + 1);
+      ahead += kRace[(i + d) % SAMPLES] * w;
+      aheadW += w;
+    }
+    for (let d = 1; d <= lookExit; d++) {
+      const w = 1 - d / (lookExit + 1);
+      behind += kRace[(i - d + SAMPLES) % SAMPLES] * w;
+      behindW += w;
+    }
+    ahead /= aheadW;
+    behind /= behindW;
+    let raw = (k0 * 2.15 - ahead * 0.82 - behind * 0.48) / kRaceMax;
+    const activity = Math.max(Math.abs(k0), Math.abs(ahead), Math.abs(behind)) / kRaceMax;
+    const straight = Math.max(0, 1 - activity * 5.4);
+    raw *= 1 - straight;
+    const ci = ((Math.round((i / SAMPLES) * nC) % nC) + nC) % nC;
+    const c = center[ci];
+    const wL = Math.hypot(leftEdge[ci][0] - c[0], leftEdge[ci][1] - c[1]);
+    const wR = Math.hypot(rightEdge[ci][0] - c[0], rightEdge[ci][1] - c[1]);
+    const span = raw >= 0 ? wL : wR;
+    return Math.max(-wR * 0.9, Math.min(wL * 0.9, raw * span));
+  });
+  offsets = blurCircular(offsets, 8, 3);
+  offsets = limitDelta(offsets, 0.72);
+
+  function at(s) {
+    const t = ((s % length) + length) % length;
+    const idx = (t / length) * SAMPLES;
+    const i0 = Math.floor(idx) % SAMPLES;
+    const i1 = (i0 + 1) % SAMPLES;
+    const u = idx - Math.floor(idx);
+    const a = samples[i0];
+    const b = samples[i1];
+    return {
+      x: a.x + (b.x - a.x) * u,
+      y: a.y + (b.y - a.y) * u,
+      tx: a.tx + (b.tx - a.tx) * u,
+      ty: a.ty + (b.ty - a.ty) * u,
+      nx: a.nx + (b.nx - a.nx) * u,
+      ny: a.ny + (b.ny - a.ny) * u,
+      k: a.k + (b.k - a.k) * u,
+      signedK: a.signedK + (b.signedK - a.signedK) * u,
+    };
+  }
+
+  function offsetAt(s) {
+    return sample1d(offsets, s);
+  }
+
+  function onLine(s) {
+    const p = at(s);
+    const o = offsetAt(s);
+    const x = p.x + p.nx * o;
+    const y = p.y + p.ny * o;
+    const q = at(s + 10);
+    const o2 = offsetAt(s + 10);
+    const x2 = q.x + q.nx * o2;
+    const y2 = q.y + q.ny * o2;
+    return {
+      x,
+      y,
+      tx: x2 - x,
+      ty: y2 - y,
+      deg: (Math.atan2(y2 - y, x2 - x) * 180 / Math.PI) + 90,
+      k: p.k,
+      signedK: p.signedK,
+    };
+  }
+
+  const linePts = [];
+  for (let i = 0; i < SAMPLES; i++) {
+    const p = onLine((i / SAMPLES) * length);
+    linePts.push([p.x, p.y]);
+  }
+  if (driveLine) {
+    const smoothLine = resampleClosed(chaikinClosed(lightSmooth(linePts, 5), 2), 128);
+    driveLine.setAttribute("d", bspline(smoothLine));
+    driveLine.setAttribute("stroke", "#224baf");
+  }
+
+  const driveLen = driveLine ? driveLine.getTotalLength() : 0;
+  function onDrive(s) {
+    if (!driveLine || driveLen < 1) return onLine(s);
+    const d0 = ((((s % length) + length) % length) / length) * driveLen;
+    const a = driveLine.getPointAtLength(d0);
+    const b = driveLine.getPointAtLength((d0 + 14) % driveLen);
+    const p = at(s);
+    return {
+      x: a.x,
+      y: a.y,
+      tx: b.x - a.x,
+      ty: b.y - a.y,
+      deg: (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI + 90,
+      k: p.k,
+      signedK: p.signedK,
+    };
+  }
+
+  const FLAG_LABELS = ["Communication Error", "Driver Error", "Other Reason"];
+  const flagLayer = document.getElementById("flags");
+  const incidentFlags = [];
+
+  function shuffle(arr) {
+    const out = arr.slice();
+    for (let i = out.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = out[i];
+      out[i] = out[j];
+      out[j] = tmp;
+    }
+    return out;
+  }
+
+  function pickFlagStations() {
+    const n = 180;
+    const pts = [];
+    for (let i = 0; i < n; i++) {
+      const p = driveLine.getPointAtLength((i / n) * driveLen);
+      const q = driveLine.getPointAtLength(((i + 1) / n) * driveLen);
+      pts.push({ x: p.x, y: p.y, nx: p.y - q.y, ny: q.x - p.x });
+    }
+    const xs = pts.map((p) => p.x);
+    const ys = pts.map((p) => p.y);
+    const minX = Math.min.apply(null, xs);
+    const maxX = Math.max.apply(null, xs);
+    const minY = Math.min.apply(null, ys);
+    const maxY = Math.max.apply(null, ys);
+    function nearest(pred) {
+      let best = pts[0];
+      let bestScore = Infinity;
+      pts.forEach((p) => {
+        const s = pred(p);
+        if (s < bestScore) {
+          bestScore = s;
+          best = p;
+        }
+      });
+      return best;
+    }
+    const left = nearest((p) => p.x);
+    const bot = nearest((p) => (p.x - left.x) * (p.x - left.x) < 90 * 90 ? 1e9 : maxY - p.y);
+    const right = nearest((p) => maxX - p.x + Math.abs(p.y - (minY + maxY) * 0.48) * 0.35);
+    const topRight = nearest((p) => (p.x < minX + (maxX - minX) * 0.55 ? 1e9 : p.y));
+    return [left, bot, right, topRight].map((p) => {
+      const nl = Math.hypot(p.nx, p.ny) || 1;
+      return { x: p.x + (p.nx / nl) * 16, y: p.y + (p.ny / nl) * 16 };
+    });
+  }
+
+  const calloutLayer = document.getElementById("hud-callouts");
+  const viewportEl = document.querySelector(".viewport");
+  const trackSvg = document.querySelector("svg.track");
+  const screenPt = trackSvg ? trackSvg.createSVGPoint() : null;
+
+  function measureHudTitle(title) {
+    const ctx = measureHudTitle.ctx || (measureHudTitle.ctx = document.createElement("canvas").getContext("2d"));
+    ctx.font = '700 13px "Barlow Condensed", Barlow, sans-serif';
+    return ctx.measureText(title).width + Math.max(0, title.length - 1) * 1.35 + 22;
+  }
+
+  function buildCallout(title, flipX, flipY, idx) {
+    const sx = flipX ? -1 : 1;
+    const sy = flipY ? -1 : 1;
+    const tw = measureHudTitle(title);
+    const x1 = sx * 28;
+    const y1 = sy * 44;
+    const x2 = x1 + sx * (tw + 18);
+    const shear = 5.5 * sx;
+    const barL = x1 + sx * 10;
+    const barR = x2 - sx * 6;
+    const barTop = y1 - 11;
+    const barBot = y1 + 7;
+    const cap = 4.2 * sx;
+    const brX = barL - sx * 3;
+    const brTop = y1 - 16;
+    const brBot = y1 + 12;
+    const brEnd = barR + sx * 4;
+    const textX = flipX ? barL - 11 : barL + 11;
+    const glowId = "hud-bar-glow-" + idx;
+    const poly = [
+      barL + shear,
+      barTop,
+      barR + shear,
+      barTop,
+      barR - shear * 0.15,
+      barBot,
+      barL - shear * 0.15,
+      barBot,
+    ].join(" ");
+
+    const overlay = document.createElement("div");
+    overlay.className = "hud-callout";
+    overlay.innerHTML =
+      '<svg viewBox="-280 -90 560 180" width="560" height="180" overflow="visible">' +
+      '<defs><filter id="' +
+      glowId +
+      '" x="-20%" y="-80%" width="140%" height="260%">' +
+      '<feGaussianBlur stdDeviation="2.2" result="b"/>' +
+      '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>' +
+      "</filter></defs>" +
+      '<path d="M 0 0 L ' +
+      x1 +
+      " " +
+      y1 +
+      " L " +
+      (barL + sx * 2) +
+      " " +
+      y1 +
+      '" fill="none" stroke="#f4f7fb" stroke-width="1.15" stroke-linejoin="miter"/>' +
+      '<polygon points="' +
+      poly +
+      '" fill="#ff4ec8" opacity="0.95" filter="url(#' +
+      glowId +
+      ')"/>' +
+      '<path d="M ' +
+      barL +
+      " " +
+      barTop +
+      " L " +
+      (barL + cap) +
+      " " +
+      barTop +
+      " L " +
+      (barL + cap) +
+      " " +
+      barBot +
+      " L " +
+      barL +
+      " " +
+      barBot +
+      ' Z" fill="#ff63d6"/>' +
+      '<path d="M ' +
+      brX +
+      " " +
+      brTop +
+      " L " +
+      brX +
+      " " +
+      brBot +
+      " L " +
+      brEnd +
+      " " +
+      brBot +
+      '" fill="none" stroke="#f4f7fb" stroke-width="1.15"/>' +
+      '<circle cx="' +
+      brEnd +
+      '" cy="' +
+      brBot +
+      '" r="2" fill="#f4f7fb"/>' +
+      '<text x="' +
+      textX +
+      '" y="' +
+      (y1 + 1.2) +
+      '" fill="#ffffff" font-family="Barlow Condensed, Barlow, sans-serif" font-size="13" font-weight="700" letter-spacing="1.35" text-anchor="' +
+      (flipX ? "end" : "start") +
+      '">' +
+      title +
+      "</text>" +
+      "</svg>";
+    if (calloutLayer) calloutLayer.appendChild(overlay);
+    return overlay;
+  }
+
+  function flagScreenPos(g) {
+    if (!trackSvg || !screenPt || !viewportEl) return null;
+    const m = g.getScreenCTM();
+    if (!m) return null;
+    const sp = screenPt.matrixTransform(m);
+    const r = viewportEl.getBoundingClientRect();
+    const stage = document.querySelector(".stage");
+    let scale = 1;
+    if (stage && stage.style.transform) {
+      const n = parseFloat(stage.style.transform.replace("scale(", ""));
+      if (n) scale = n;
+    }
+    return { x: (sp.x - r.left) / scale, y: (sp.y - r.top) / scale };
+  }
+
+  function hideFlagTips() {
+    incidentFlags.forEach((f) => {
+      if (f.overlay) f.overlay.classList.remove("is-open");
+    });
+    if (window.CommScene) window.CommScene.close();
+  }
+
+  if (flagLayer && driveLine && driveLen > 1) {
+    const assigned = shuffle(FLAG_LABELS.concat(FLAG_LABELS[Math.floor(Math.random() * FLAG_LABELS.length)]));
+    const stations = pickFlagStations();
+    const midX = stations.reduce((s, p) => s + p.x, 0) / stations.length;
+    const midY = stations.reduce((s, p) => s + p.y, 0) / stations.length;
+    stations.forEach((pt, i) => {
+      let label = assigned[i];
+      const isRight = i === 2;
+      if (isRight) label = "Driver Error";
+      else if (label === "Driver Error") label = "Other Reason";
+      const title = label.toUpperCase();
+      const flipX = pt.x > midX;
+      const flipY = pt.y > midY + 8;
+
+      const isDriver = label === "Driver Error";
+      const isComm = label === "Communication Error";
+      const isRed = isDriver || isComm;
+      const g = document.createElementNS(NS, "g");
+      g.setAttribute("class", isRed ? "incident-flag incident-flag--comm" : "incident-flag");
+
+      const hit = document.createElementNS(NS, "circle");
+      hit.setAttribute("class", "flag-hit");
+      hit.setAttribute("r", "14");
+
+      const halo = document.createElementNS(NS, "circle");
+      halo.setAttribute("r", "5.6");
+      halo.setAttribute("fill", isRed ? "#ff3b2f" : "#ff4ec8");
+      halo.setAttribute("opacity", "0.32");
+      halo.setAttribute("filter", isRed ? "url(#glow-red)" : "url(#glow-callout)");
+      const node = document.createElementNS(NS, "circle");
+      node.setAttribute("r", "2.35");
+      node.setAttribute("fill", isRed ? "#e02424" : "#ff5ad4");
+      node.setAttribute("stroke", isRed ? "#ffd0c4" : "#ffd6f2");
+      node.setAttribute("stroke-width", "0.65");
+
+      const overlay = isRed ? null : buildCallout(title, flipX, flipY, i);
+
+      g.appendChild(hit);
+      g.appendChild(halo);
+      g.appendChild(node);
+      g.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        const commOpen = !!(window.CommScene && window.CommScene.isOpen());
+        const open = overlay && overlay.classList.contains("is-open");
+        hideFlagTips();
+        if (isDriver) {
+          if (window.CommScene && !commOpen) window.CommScene.open({ kind: "driver" });
+          return;
+        }
+        if (isComm) {
+          if (window.CommScene && !commOpen) window.CommScene.open();
+          return;
+        }
+        if (!open && overlay) overlay.classList.add("is-open");
+      });
+      flagLayer.appendChild(g);
+      incidentFlags.push({ g, overlay, x: pt.x, y: pt.y, label: label });
+    });
+    if (trackSvg) {
+      trackSvg.addEventListener("click", () => hideFlagTips());
+    }
+  }
+
+  function lookK(s) {
+    let k = at(s).k;
+    for (let step = 18; step <= 220; step += 18) {
+      const ahead = at(s + step).k;
+      const weight = 1 - step / 260;
+      k = Math.max(k, ahead * Math.max(0.35, weight));
+    }
+    return k;
+  }
+
+  const vMin = 98;
+  const vMax = 338;
+  function targetKmh(s, pace) {
+    const k = lookK(s) / kMax;
+    const corner = Math.min(1, Math.pow(k, 0.72));
+    return (vMin + (vMax - vMin) * (1 - corner)) * pace;
+  }
+
+  const peaks = [];
+  for (let i = 0; i < SAMPLES; i++) {
+    const prev = samples[(i - 1 + SAMPLES) % SAMPLES].k;
+    const cur = samples[i].k;
+    const next = samples[(i + 1) % SAMPLES].k;
+    if (cur > prev && cur >= next && cur > kMax * 0.28) peaks.push(samples[i]);
+  }
+  peaks.sort((a, b) => b.k - a.k);
+  const turn10 = peaks[Math.min(2, peaks.length - 1)] || samples[Math.floor(SAMPLES * 0.62)];
+  const apexS = turn10.s;
+  const brakeZone = 110 / mPerPx;
+
+  const meshPts = [
+    [402.4, 212.0], [375.7, 199.8], [352.1, 190.2], [330.9, 182.5], [311.4, 176.4],
+    [293.3, 171.5], [276.2, 167.5], [259.9, 164.3], [244.3, 161.7], [229.1, 159.8],
+    [214.2, 158.3], [199.6, 157.3], [185.0, 156.6], [170.5, 156.4], [155.9, 156.6],
+    [141.2, 157.1], [126.1, 158.0], [110.8, 159.3], [94.9, 161.0], [78.5, 163.2],
+    [61.5, 165.8], [43.7, 169.0], [24.9, 172.8], [5.2, 177.4],
+  ];
+
+  const car = { s: 0.02 * length, pace: 1, v: 250 };
+
+  car.el = document.createElementNS(NS, "g");
+  car.el.setAttribute("class", "car-sprite");
+  const sprite = document.createElementNS(NS, "image");
+  sprite.setAttribute("href", "https://iili.io/nBtxJqu.png");
+  sprite.setAttributeNS("http://www.w3.org/1999/xlink", "href", "https://iili.io/nBtxJqu.png");
+  sprite.setAttribute("x", "-7.7");
+  sprite.setAttribute("y", "-16.8");
+  sprite.setAttribute("width", "15.4");
+  sprite.setAttribute("height", "32.2");
+  sprite.setAttribute("opacity", "0.9");
+  sprite.setAttribute("filter", "url(#car-soft)");
+  sprite.setAttribute("preserveAspectRatio", "xMidYMid meet");
+  car.el.appendChild(sprite);
+  layer.appendChild(car.el);
+
+  const el = (id) => document.getElementById(id);
+  const world = document.getElementById("world");
+  if (world && layer.parentNode === world) world.appendChild(layer);
+  const svg = document.querySelector("svg.track");
+  const skyline = document.querySelector(".skyline");
+  const RANGE = 200;
+  const cam = {
+    x: 0,
+    y: 0,
+    ready: false,
+    mode: /[?&]cam=overview/.test(location.search) ? "overview" : "close",
+    blend: /[?&]cam=overview/.test(location.search) ? 1 : 0,
+  };
+
+  const bb = (trackFill || path).getBBox();
+  const ov = {
+    cx: bb.x + bb.width / 2,
+    cy: bb.y + bb.height / 2,
+    w: bb.width,
+    h: bb.height,
+  };
+  const ovShiftX = 0;
+
+  function cameraFrame() {
+    const cw = Math.max(1, (svg && svg.clientWidth) || 400);
+    const ch = Math.max(1, (svg && svg.clientHeight) || 400);
+    const vbW = 400;
+    const vbH = 400 * (ch / cw);
+    const tools = document.querySelector(".viewport-tools .tools-left");
+    const toolsCss = tools ? tools.offsetWidth : 148;
+    const leftPx = 22 + toolsCss + 56;
+    const leftPad = (leftPx / cw) * vbW;
+    const padR = (36 / cw) * vbW;
+    const padY = (28 / ch) * vbH;
+    const availW = Math.max(80, vbW - leftPad - padR);
+    const availH = Math.max(80, vbH - padY * 2);
+    return {
+      vbW,
+      vbH,
+      rangeX: leftPad + availW / 2,
+      rangeY: vbH / 2,
+      fit: Math.min(availW / ov.w, availH / ov.h),
+    };
+  }
+
+  const hud = document.querySelector(".hud");
+  function syncCircuitLayout() {
+    if (hud) hud.classList.toggle("is-circuit1", cam.mode === "overview");
+  }
+  syncCircuitLayout();
+
+  document.querySelectorAll(".mode-btn[data-mode]").forEach((btn) => {
+    const on = (btn.getAttribute("data-mode") || "close") === cam.mode;
+    btn.classList.toggle("is-on", on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+    btn.addEventListener("click", () => {
+      cam.mode = btn.getAttribute("data-mode") || "close";
+      document.querySelectorAll(".mode-btn[data-mode]").forEach((b) => {
+        const active = b === btn;
+        b.classList.toggle("is-on", active);
+        b.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+      syncCircuitLayout();
+    });
+  });
+
+  const STANDINGS = [
+    { num: 77, code: "BOT", tyre: "C4", gap: 0 },
+    { num: 81, code: "PIA", tyre: "C3", gap: 0.3 },
+    { num: 4, code: "NOR", tyre: "C3", gap: 0.7 },
+    { num: 1, code: "VER", tyre: "C4", gap: 1.2 },
+    { num: 16, code: "LEC", tyre: "C3", gap: 1.8 },
+    { num: 55, code: "SAI", tyre: "C4", gap: 2.4 },
+    { num: 63, code: "RUS", tyre: "C2", gap: 3.1 },
+    { num: 44, code: "HAM", tyre: "C3", gap: 3.6 },
+    { num: 14, code: "ALO", tyre: "C4", gap: 4.4 },
+    { num: 18, code: "STR", tyre: "C5", gap: 5.2 },
+    { num: 10, code: "GAS", tyre: "C3", gap: 6.0 },
+    { num: 31, code: "OCO", tyre: "C4", gap: 6.9 },
+    { num: 23, code: "ALB", tyre: "C5", gap: 8.6 },
+    { num: 22, code: "TSU", tyre: "C3", gap: 9.0 },
+    { num: 3, code: "RIC", tyre: "C4", gap: 10.1 },
+    { num: 27, code: "HUL", tyre: "C2", gap: 11.4 },
+    { num: 20, code: "MAG", tyre: "C3", gap: 12.2 },
+    { num: 24, code: "ZHO", tyre: "C4", gap: 13.5 },
+    { num: 2, code: "SAR", tyre: "C5", gap: 14.8 },
+    { num: 11, code: "PER", tyre: "C3", gap: 16.2 },
+    { num: 43, code: "COL", tyre: "C4", gap: 17.6 },
+    { num: 50, code: "BEA", tyre: "C3", gap: 19.4 },
+  ];
+  const standingsEl = document.getElementById("standings");
+  let selectedNum = 23;
+  const standRows = [];
+  const dots = [];
+
+  function fmtGap(sec) {
+    if (sec <= 0.001) return "LEADER";
+    return "+" + sec.toFixed(1) + "s";
+  }
+
+  function intervalGap(i) {
+    if (i === 0) return "LEADER";
+    return fmtGap(Math.max(0.1, STANDINGS[i].gap - STANDINGS[i - 1].gap));
+  }
+
+  function driverByNum(num) {
+    return STANDINGS.find((d) => d.num === num) || STANDINGS[12];
+  }
+
+  STANDINGS.forEach((d, i) => {
+    d.pos = i + 1;
+    d.baseGap = d.gap;
+    if (!standingsEl) return;
+    const row = document.createElement("li");
+    row.className = "stand-row";
+    row.dataset.num = String(d.num);
+    row.innerHTML =
+      "<b>P" +
+      d.pos +
+      "</b><em>#" +
+      d.num +
+      " " +
+      d.code +
+      '</em><span class="gap">' +
+      intervalGap(i) +
+      '</span><span class="tyre-pill ' +
+      d.tyre.toLowerCase() +
+      '">' +
+      d.tyre +
+      "</span>";
+    row.addEventListener("click", () => {
+      selectedNum = d.num;
+      paintStandings();
+      fillPanel();
+    });
+    standingsEl.appendChild(row);
+    standRows.push(row);
+
+    const g = document.createElementNS(NS, "g");
+    g.setAttribute("class", "car-dot");
+    g.dataset.num = String(d.num);
+    const halo = document.createElementNS(NS, "circle");
+    halo.setAttribute("r", "16");
+    halo.setAttribute("fill", "#224baf");
+    halo.setAttribute("opacity", "0");
+    halo.setAttribute("filter", "url(#glow-blue)");
+    const node = document.createElementNS(NS, "circle");
+    node.setAttribute("r", "10.5");
+    node.setAttribute("stroke", "#224baf");
+    node.setAttribute("stroke-width", "1.4");
+    node.setAttribute("fill", "#faf0e8");
+    const label = document.createElementNS(NS, "text");
+    label.setAttribute("text-anchor", "middle");
+    label.setAttribute("dominant-baseline", "central");
+    label.setAttribute("font-family", "Barlow Condensed, Barlow, sans-serif");
+    label.setAttribute("font-size", "10");
+    label.setAttribute("font-weight", "700");
+    label.setAttribute("fill", "#224baf");
+    label.textContent = String(d.num);
+    g.appendChild(halo);
+    g.appendChild(node);
+    g.appendChild(label);
+    g.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      selectedNum = d.num;
+      paintStandings();
+      fillPanel();
+    });
+    layer.appendChild(g);
+    dots.push({ d, g, halo, node, label });
+  });
+
+  function paintDots(raceT, worldScale) {
+    const pack = STANDINGS[STANDINGS.length - 1].gap || 1;
+    const len = driveLen > 1 ? driveLen : length;
+    const svgW = Math.max(1, (svg && svg.clientWidth) || 400);
+    const vbW = (svg && svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.width) || 400;
+    const targetPx = 11.2;
+    const pxPerWorld = Math.max(0.01, worldScale * (svgW / vbW));
+    const ds = targetPx / (10.5 * pxPerWorld);
+    dots.forEach((item) => {
+      const on = item.d.num === selectedNum;
+      const sPos = (raceT * len - (item.d.gap / pack) * len * 0.72 + len) % len;
+      const pt = onDrive(sPos);
+      item.g.setAttribute(
+        "transform",
+        "translate(" + pt.x.toFixed(1) + " " + pt.y.toFixed(1) + ") scale(" + ds.toFixed(3) + ")"
+      );
+      item.halo.setAttribute("opacity", on ? "0.28" : "0");
+      item.node.setAttribute("r", on ? "13.5" : "10.5");
+      item.node.setAttribute("fill", on ? "#224baf" : "#faf0e8");
+      item.label.setAttribute("fill", on ? "#faf0e8" : "#224baf");
+      item.label.setAttribute("font-size", on ? "12" : "10");
+    });
+  }
+
+  function paintStandings() {
+    STANDINGS.forEach((d, i) => {
+      const row = standRows[i];
+      if (!row) return;
+      row.classList.toggle("is-on", d.num === selectedNum);
+      row.querySelector("b").textContent = "P" + d.pos;
+      row.querySelector(".gap").textContent = intervalGap(i);
+    });
+  }
+
+  function fillPanel() {
+    const d = driverByNum(selectedNum);
+    const i = STANDINGS.indexOf(d);
+    const behind = STANDINGS[i + 1];
+    const ahead = i === 0 ? 0 : d.gap - STANDINGS[i - 1].gap;
+    el("head-pos").textContent = "P" + d.pos;
+    el("head-num").textContent = String(d.num);
+    el("head-code").textContent = d.code;
+    el("head-arrow").textContent = i < 12 ? "↑" : "↓";
+    el("tel-select").textContent = "#" + d.num + " " + d.code;
+    el("tel-position").textContent = "P" + d.pos;
+    el("tel-gap-ahead").textContent = i === 0 ? "—" : "+" + ahead.toFixed(1) + "s";
+    el("tel-gap-behind").textContent = behind ? "+" + (behind.gap - d.gap).toFixed(1) + "s" : "—";
+    el("tel-leader").textContent = fmtGap(d.gap);
+    el("tel-compound").textContent = d.tyre;
+    el("tel-compound").className = "tyre-pill " + d.tyre.toLowerCase();
+  }
+
+  const tel = {
+    lap: 49,
+    speed: 153,
+    rpm: 10859,
+    gear: 3,
+    cur: 39.9,
+    dist: 1571,
+    thr: 100,
+    brk: 0,
+    ers: 98.9,
+    fuel: 15.2,
+    eng: 115.6,
+    wear: 6.8,
+    fl: 105.7,
+    fr: 106.1,
+    rl: 104.8,
+    rr: 105.2,
+    wfl: 3.3,
+    wfr: 3.1,
+    wrl: 4.0,
+    wrr: 3.8,
+    age: 18,
+  };
+
+  let last = performance.now();
+  function tick(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+
+    const tgt = targetKmh(car.s, car.pace);
+    const accel = tgt > car.v ? 88 : 160;
+    car.v += Math.max(-accel, Math.min(accel, tgt - car.v)) * dt;
+    const pxPerSec = (car.v / 3.6 / mPerPx) * 11;
+    car.s = (car.s + pxPerSec * dt) % length;
+
+    const p = onDrive(car.s);
+    const targetBlend = cam.mode === "overview" ? 1 : 0;
+    cam.blend += (targetBlend - cam.blend) * Math.min(1, dt * 3.4);
+    const t = cam.blend;
+    const frame = cameraFrame();
+    const fitScale = frame.fit;
+    const s = 1 + (fitScale - 1) * t;
+    const visualCar = 1.85 - 1.05 * t;
+    car.el.setAttribute(
+      "transform",
+      "translate(" +
+        p.x.toFixed(2) +
+        " " +
+        p.y.toFixed(2) +
+        ") rotate(" +
+        p.deg.toFixed(1) +
+        ") scale(" +
+        (visualCar / s).toFixed(2) +
+        ")"
+    );
+
+    if (!cam.ready) {
+      cam.x = p.x;
+      cam.y = p.y;
+      cam.ready = true;
+    } else {
+      const follow = Math.min(1, dt * 16);
+      cam.x += (p.x - cam.x) * follow;
+      cam.y += (p.y - cam.y) * follow;
+    }
+    const focusX = cam.x + (ov.cx - ovShiftX - cam.x) * t;
+    const focusY = cam.y + (ov.cy - cam.y) * t;
+    const rangeX = RANGE + (frame.rangeX - RANGE) * t;
+    const rangeY = RANGE + (frame.rangeY - RANGE) * t;
+    if (svg) {
+      const vbW = 400 + (frame.vbW - 400) * t;
+      const vbH = 400 + (frame.vbH - 400) * t;
+      svg.setAttribute("viewBox", "0 0 " + vbW.toFixed(2) + " " + vbH.toFixed(2));
+      svg.setAttribute("preserveAspectRatio", t > 0.55 ? "xMidYMid meet" : "xMidYMid slice");
+      svg.style.setProperty("--cam-tilt", "0deg");
+      svg.style.setProperty("--cam-zoom", "1");
+      svg.classList.toggle("is-overview", t > 0.55);
+    }
+    if (world) {
+      world.setAttribute(
+        "transform",
+        "translate(" +
+          rangeX.toFixed(2) +
+          " " +
+          rangeY.toFixed(2) +
+          ") scale(" +
+          s.toFixed(4) +
+          ") translate(" +
+          (-focusX).toFixed(2) +
+          " " +
+          (-focusY).toFixed(2) +
+          ")"
+      );
+    }
+    syncCircuitLayout();
+    const flagScale = ((2.35 * 0.2) / s).toFixed(3);
+    incidentFlags.forEach((f) => {
+      f.g.setAttribute("transform", "translate(" + f.x.toFixed(1) + " " + f.y.toFixed(1) + ") scale(" + flagScale + ")");
+      if (f.overlay) {
+        const sp = flagScreenPos(f.g);
+        if (sp) f.overlay.style.transform = "translate(" + sp.x.toFixed(1) + "px," + sp.y.toFixed(1) + "px)";
+      }
+    });
+    if (t < 0.45) hideFlagTips();
+    if (skyline) skyline.setAttribute("opacity", "0");
+    if (driveLine) driveLine.setAttribute("stroke-width", Math.min(2.05 / s, 2.6).toFixed(2));
+    if (trackBorder) trackBorder.setAttribute("stroke-width", String(TRACK_OUTLINE));
+
+    STANDINGS.forEach((d, i) => {
+      d.gap = Math.max(0, d.baseGap + Math.sin(now * 0.0004 + i) * 0.08);
+      d.pos = i + 1;
+    });
+    const dSel = driverByNum(selectedNum);
+    const corner = 0.5 + 0.5 * Math.sin(now * 0.0011 + dSel.pos);
+    tel.speed = 118 + (1 - corner) * 168 + Math.sin(now * 0.002 + dSel.num) * 6;
+    tel.gear = tel.speed < 130 ? 3 : tel.speed < 180 ? 4 : tel.speed < 230 ? 5 : tel.speed < 270 ? 6 : 7;
+    tel.rpm = 7800 + tel.gear * 380 + tel.speed * 8;
+    tel.thr = Math.max(8, Math.min(100, (1 - corner) * 100));
+    tel.brk = corner > 0.72 ? Math.min(100, (corner - 0.72) * 280) : 0;
+    tel.cur += 0.016;
+    tel.dist = 400 + ((now * 0.04) % 5200);
+    tel.ers = 92 + Math.sin(now * 0.0003 + dSel.pos) * 6;
+    tel.fuel = Math.max(4.2, 15.2 - now * 0.0000004);
+    tel.eng = 114.2 + Math.sin(now * 0.0008 + dSel.num) * 2.1;
+    tel.fl = 104.8 + Math.sin(now * 0.001) * 1.4;
+    tel.fr = 105.2 + Math.cos(now * 0.0011) * 1.5;
+    tel.rl = 104.1 + Math.sin(now * 0.0009) * 1.2;
+    tel.rr = 104.6 + Math.cos(now * 0.0007) * 1.1;
+    tel.wear = 6.2 + Math.sin(now * 0.00025 + dSel.pos) * 0.8;
+    tel.wfl = 3.1 + Math.sin(now * 0.0005) * 0.35;
+    tel.wfr = 2.9 + Math.cos(now * 0.00055) * 0.32;
+    tel.wrl = 3.8 + Math.sin(now * 0.00045) * 0.4;
+    tel.wrr = 3.6 + Math.cos(now * 0.00048) * 0.38;
+
+    el("tel-lap").textContent = String(tel.lap);
+    el("tel-speed").textContent = tel.speed.toFixed(1) + " km/h";
+    el("tel-rpm").textContent = String(Math.round(tel.rpm));
+    el("tel-gear").textContent = String(tel.gear);
+    el("tel-cur-lap").textContent = tel.cur.toFixed(1) + "s";
+    el("tel-dist").textContent = Math.round(tel.dist) + " m";
+    el("tel-thr").textContent = Math.round(tel.thr) + "%";
+    el("tel-brk").textContent = Math.round(tel.brk) + "%";
+    el("bar-thr").style.width = tel.thr.toFixed(0) + "%";
+    el("bar-brk").style.width = tel.brk.toFixed(0) + "%";
+    el("tel-drs").textContent = tel.speed > 240 && tel.thr > 90 ? "ON" : "OFF";
+    el("tel-ers").textContent = tel.ers.toFixed(1) + "%";
+    el("tel-age").textContent = tel.age + " laps";
+    el("tel-wear").textContent = tel.wear.toFixed(1) + "%";
+    el("tel-fuel").textContent = tel.fuel.toFixed(1) + " L";
+    el("tel-eng").textContent = tel.eng.toFixed(1) + "°C";
+    el("tel-fl").textContent = tel.fl.toFixed(1) + "°C";
+    el("tel-fr").textContent = tel.fr.toFixed(1) + "°C";
+    el("tel-rl").textContent = tel.rl.toFixed(1) + "°C";
+    el("tel-rr").textContent = tel.rr.toFixed(1) + "°C";
+    el("wear-fl").textContent = tel.wfl.toFixed(1) + "%";
+    el("wear-fr").textContent = tel.wfr.toFixed(1) + "%";
+    el("wear-rl").textContent = tel.wrl.toFixed(1) + "%";
+    el("wear-rr").textContent = tel.wrr.toFixed(1) + "%";
+    paintDots((now * 0.000012) % 1, s);
+    paintStandings();
+    fillPanel();
+
+    requestAnimationFrame(tick);
+  }
+
+  paintStandings();
+  fillPanel();
+  requestAnimationFrame(tick);
+})();
+    </script>
+    <script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+const MODEL_URL =
+      "https://github.com/xicaolahui/boxbox-hud/releases/download/v1/race-car-driver.glb";
+const DEFAULT_TITLE = "Communication Error";
+const DEFAULT_MESSAGE = "Car ahead is slowing, prepare to overtake.";
+const DRIVER_TITLE = "Driver Error";
+const DRIVER_MESSAGE =
+  "Entry was too aggressive. You carried the braking too deep and asked too much from the rear at turn-in. Next lap, brake earlier, release progressively, and focus on a smoother entry.";
+
+const root = document.getElementById("comm-overlay");
+const canvasHost = document.getElementById("comm-canvas");
+const flashEl = document.getElementById("comm-flash");
+const captionEl = document.getElementById("comm-caption");
+const typedEl = document.getElementById("comm-typed");
+const titleEl = document.getElementById("comm-title");
+const waitEl = document.getElementById("comm-wait");
+let activeMessage = DEFAULT_MESSAGE;
+
+let renderer = null;
+let scene = null;
+let camera = null;
+let model = null;
+let mixer = null;
+let clips = [];
+let clock = new THREE.Clock();
+let camTarget = new THREE.Vector3();
+let camOffset = new THREE.Vector3(0, 0, 4);
+let raf = 0;
+let loaded = false;
+let loadPromise = null;
+let typeTimer = 0;
+let revealTimer = 0;
+let typeStartTimer = 0;
+
+function isOpen() {
+  return !!(root && root.classList.contains("is-open"));
+}
+
+function clearTimers() {
+  if (typeTimer) window.clearInterval(typeTimer);
+  if (revealTimer) window.clearTimeout(revealTimer);
+  if (typeStartTimer) window.clearTimeout(typeStartTimer);
+  typeTimer = 0;
+  revealTimer = 0;
+  typeStartTimer = 0;
+}
+
+function ensureThree() {
+  if (renderer || !canvasHost) return;
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(28, 1, 0.05, 200);
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setClearColor(0x000000, 0);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.12;
+  canvasHost.appendChild(renderer.domElement);
+
+  scene.add(new THREE.HemisphereLight(0xfff3e8, 0x5d6d82, 1.2));
+  const key = new THREE.DirectionalLight(0xffffff, 1.55);
+  key.position.set(2.4, 3.6, 4.2);
+  scene.add(key);
+  const fill = new THREE.DirectionalLight(0xffd4a8, 0.55);
+  fill.position.set(-3.2, 1.2, 1.4);
+  scene.add(fill);
+  const rim = new THREE.DirectionalLight(0xffffff, 0.8);
+  rim.position.set(-1.4, 2.6, -3.6);
+  scene.add(rim);
+}
+
+function fitModel(object) {
+  object.rotation.set(0, 0, 0);
+  object.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(object);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  object.position.sub(center);
+  object.updateMatrixWorld(true);
+  const fitted = new THREE.Box3().setFromObject(object);
+  const fittedSize = fitted.getSize(new THREE.Vector3());
+  const maxDim = Math.max(fittedSize.x, fittedSize.y, fittedSize.z) || 1;
+  camTarget.set(0, fittedSize.y * 0.02, 0);
+  camOffset.set(0, fittedSize.y * 0.08, maxDim * 2.7);
+  camera.near = Math.max(0.02, maxDim / 80);
+  camera.far = maxDim * 24;
+  camera.position.copy(camOffset);
+  camera.lookAt(camTarget);
+  camera.updateProjectionMatrix();
+}
+
+function resize() {
+  if (!renderer || !camera || !canvasHost) return;
+  const w = Math.max(1, canvasHost.clientWidth);
+  const h = Math.max(1, canvasHost.clientHeight);
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+
+function tick() {
+  raf = window.requestAnimationFrame(tick);
+  if (!renderer || !scene || !camera) return;
+  if (mixer) mixer.update(clock.getDelta());
+  camera.position.copy(camOffset);
+  camera.lookAt(camTarget);
+  renderer.render(scene, camera);
+}
+
+function startLoop() {
+  if (raf) return;
+  clock.getDelta();
+  tick();
+}
+
+function playAnimations() {
+  if (!mixer || !clips.length) return;
+  mixer.stopAllAction();
+  mixer.setTime(0);
+  clips.forEach((clip) => {
+    const action = mixer.clipAction(clip);
+    action.reset();
+    action.setLoop(THREE.LoopRepeat, Infinity);
+    action.clampWhenFinished = false;
+    action.play();
+  });
+}
+
+function stopLoop() {
+  if (raf) window.cancelAnimationFrame(raf);
+  raf = 0;
+}
+
+function typewrite(text) {
+  if (!typedEl) return;
+  typedEl.textContent = "";
+  let i = 0;
+  typeTimer = window.setInterval(() => {
+    i += 1;
+    typedEl.textContent = text.slice(0, i);
+    if (i >= text.length) {
+      window.clearInterval(typeTimer);
+      typeTimer = 0;
+    }
+  }, 28);
+}
+
+function playReveal() {
+  if (waitEl) waitEl.textContent = "";
+  if (root) root.classList.remove("is-loading");
+  if (captionEl) captionEl.classList.remove("is-in");
+  if (typedEl) typedEl.textContent = "";
+  if (flashEl) {
+    flashEl.classList.remove("is-on");
+    void flashEl.offsetWidth;
+    flashEl.classList.add("is-on");
+  }
+  revealTimer = window.setTimeout(() => {
+    if (!isOpen()) return;
+    if (captionEl) captionEl.classList.add("is-in");
+    typeStartTimer = window.setTimeout(() => {
+      if (!isOpen()) return;
+      typewrite(activeMessage);
+    }, 340);
+  }, 220);
+}
+
+function loadModel() {
+  if (loaded) return Promise.resolve();
+  if (loadPromise) return loadPromise;
+  ensureThree();
+  loadPromise = new Promise((resolve, reject) => {
+    const loader = new GLTFLoader();
+    loader.load(
+      MODEL_URL,
+      (gltf) => {
+        model = gltf.scene;
+        model.traverse((node) => {
+          if (node.isMesh) node.frustumCulled = false;
+        });
+        scene.add(model);
+        fitModel(model);
+        clips = gltf.animations || [];
+        mixer = clips.length ? new THREE.AnimationMixer(model) : null;
+        playAnimations();
+        loaded = true;
+        resolve();
+      },
+      undefined,
+      (err) => {
+        loadPromise = null;
+        reject(err);
+      }
+    );
+  });
+  return loadPromise;
+}
+
+function open(opts) {
+  if (!root) return;
+  const kind = opts && opts.kind === "driver" ? "driver" : "comm";
+  activeMessage = kind === "driver" ? DRIVER_MESSAGE : DEFAULT_MESSAGE;
+  if (titleEl) titleEl.textContent = kind === "driver" ? DRIVER_TITLE : DEFAULT_TITLE;
+  if (root) root.classList.toggle("is-driver", kind === "driver");
+  ensureThree();
+  clearTimers();
+  root.classList.add("is-open", "is-loading");
+  root.setAttribute("aria-hidden", "false");
+  if (captionEl) captionEl.classList.remove("is-in");
+  if (typedEl) typedEl.textContent = "";
+  if (waitEl) waitEl.textContent = "Loading driver…";
+  if (flashEl) flashEl.classList.remove("is-on");
+  resize();
+  startLoop();
+  loadModel()
+    .then(() => {
+      if (!isOpen()) return;
+      playAnimations();
+      resize();
+      playReveal();
+    })
+    .catch((err) => {
+      console.error(err);
+      if (!isOpen()) return;
+      root.classList.remove("is-loading");
+      if (waitEl) waitEl.textContent = "";
+      if (captionEl) captionEl.classList.add("is-in");
+      if (typedEl) typedEl.textContent = "Unable to load driver model.";
+    });
+}
+
+function close() {
+  if (!root || !root.classList.contains("is-open")) return;
+  clearTimers();
+  root.classList.remove("is-open", "is-loading");
+  root.setAttribute("aria-hidden", "true");
+  if (flashEl) flashEl.classList.remove("is-on");
+  if (captionEl) captionEl.classList.remove("is-in");
+  if (typedEl) typedEl.textContent = "";
+  if (waitEl) waitEl.textContent = "";
+  stopLoop();
+}
+
+if (root) {
+  root.addEventListener("click", () => close());
+}
+
+window.addEventListener("resize", () => {
+  if (isOpen()) resize();
+});
+
+document.addEventListener("keydown", (ev) => {
+  if (ev.key === "Escape") close();
+});
+
+window.CommScene = { open, close, isOpen };
+    </script>
+  </body>
+</html>
